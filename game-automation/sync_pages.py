@@ -24,6 +24,16 @@ PAGES = [
     ("privacy-policy.html", "Privacy Policy", "privacy-policy"),
 ]
 
+# 동기화 시 페이지 상단에 넣을 Pretendard 폰트 스타일
+PRETENDARD_STYLE = """
+<style>
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+body { font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
+h1, h2, h3, h4, h5, h6 { font-family: "Pretendard", sans-serif; font-weight: 700; }
+p, div, span { font-family: "Pretendard", sans-serif; font-weight: 400; line-height: 1.7; }
+</style>
+"""
+
 
 def main():
     """content/pages/ 에 정의된 페이지들을 WordPress에 반영한다."""
@@ -41,6 +51,7 @@ def main():
             continue
         with open(path, "r", encoding="utf-8") as f:
             content = f.read()
+        content = PRETENDARD_STYLE.strip() + "\n\n" + content
         wordpress_client.publish_static_page(title, slug, content)
 
     print("\n" + "=" * 50)
