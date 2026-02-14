@@ -73,6 +73,24 @@ def main():  # pylint: disable=too-many-locals,too-many-statements
             playable = False
 
         title_ok = "2048" in page.title() or page.locator("h1:has-text('2048')").count() > 0
+
+        # 크기: iframe·보드 픽셀 크기 (90vh 등 적용 여부)
+        iframe_w, iframe_h, board_w, board_h = 0, 0, 0, 0
+        if has_iframe:
+            try:
+                iframe_el = page.locator(".game-iframe-wrap iframe").first
+                if iframe_el.count() > 0:
+                    box = iframe_el.bounding_box()
+                    if box:
+                        iframe_w, iframe_h = int(box["width"]), int(box["height"])
+                board_el = fl.locator("#board").first
+                if board_el.count() > 0:
+                    box = board_el.bounding_box()
+                    if box:
+                        board_w, board_h = int(box["width"]), int(box["height"])
+            except Exception:  # pylint: disable=broad-exception-caught
+                pass
+
         page.screenshot(path=screenshot_path)
         browser.close()
 
@@ -87,11 +105,16 @@ def main():  # pylint: disable=too-many-locals,too-many-statements
         print(f"iframe 내 #board .cell 개수 (16개면 정상): {cell_count}")
         if has_iframe and cell_count == 16:
             print(f"방향키 반응 (실제 플레이 가능): {'✅' if playable else '❌'}")
+        size_ok = True
+        if iframe_w or iframe_h:
+            print(f"크기: iframe {iframe_w}×{iframe_h}px, 보드 {board_w}×{board_h}px")
+            size_ok = iframe_h >= 400 and board_w >= 200 and board_h >= 200
+            print(f"크기 적절 (iframe 높이≥400, 보드≥200): {'✅' if size_ok else '⚠️'}")
         print(f"스크린샷: {os.path.abspath(screenshot_path)}")
         print("=" * 50)
         all_ok = (
             title_ok and has_iframe and wrapper_visible and board_visible
-            and cell_count == 16 and playable
+            and cell_count == 16 and playable and size_ok
         )
         if all_ok:
             print("✅ iframe 내 보드·스타일·스크립트 정상 동작 (플레이 가능)")
