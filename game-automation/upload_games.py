@@ -17,6 +17,7 @@ _script_dir = os.path.dirname(os.path.abspath(__file__))
 if _script_dir not in sys.path:
     sys.path.insert(0, _script_dir)
 
+import config  # noqa: F401 — .env 로드 (SUPABASE_URL, SUPABASE_ANON_KEY 등)
 import paths
 import wordpress_client
 
@@ -45,7 +46,10 @@ def _inline_assets(html_content, html_path):
         if not os.path.isfile(file_path):
             return match.group(0)
         with open(file_path, "r", encoding="utf-8") as f:
-            return "<script>\n" + f.read() + "\n</script>"
+            content = f.read()
+        content = content.replace("__SUPABASE_URL__", os.environ.get("SUPABASE_URL", ""))
+        content = content.replace("__SUPABASE_ANON_KEY__", os.environ.get("SUPABASE_ANON_KEY", ""))
+        return "<script>\n" + content + "\n</script>"
 
     html_content = re.sub(
         r'<link\s+[^>]*rel=["\']stylesheet["\'][^>]*href=["\']([^"\']+)["\'][^>]*>',

@@ -1,7 +1,10 @@
 .env
 .env.local
+.cursor/mcp.json
+.playwright-mcp/
 .DS_Store
 __pycache__/
 .venv/
 .ruff_cache/
 e2e/screenshots/*.png
+**/e2e-report*.md

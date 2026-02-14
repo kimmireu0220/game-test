@@ -1,3 +1,4 @@
 [
-  { "file": "2048/index.html", "title": "2048 게임", "slug": "2048-game" }
+  {"file": "2048/index.html", "title": "2048 게임", "slug": "2048-game"},
+  {"file": "timing-game/index.html", "title": "시간 맞추기 게임", "slug": "timing-game"}
 ]
