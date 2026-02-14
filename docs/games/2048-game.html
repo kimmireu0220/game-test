@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>2048 게임 - 무료 온라인 게임</title>
+  <style>
+/* WordPress 본문 안에 넣을 때 테마와 겹치지 않도록 .game-page-wrapper 로 스코프 */
+.game-page-wrapper * { box-sizing: border-box; margin: 0; padding: 0; }
+.game-page-wrapper {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  color: #eee;
+  touch-action: none;
+  border-radius: 12px;
+}
+.game-page-wrapper h1 { font-size: 2.5rem; margin-bottom: 8px; color: #4CAF50; }
+.game-page-wrapper .sub { font-size: 0.9rem; opacity: 0.8; margin-bottom: 16px; }
+.game-page-wrapper .score-wrap { display: flex; gap: 16px; margin-bottom: 16px; }
+.game-page-wrapper .score-box {
+  background: rgba(255,255,255,0.1);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: bold;
+}
+.game-page-wrapper .score-box span { color: #4CAF50; }
+.game-page-wrapper #board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 8px;
+  width: min(90vw, 320px);
+  height: min(90vw, 320px);
+  background: rgba(255,255,255,0.05);
+  padding: 8px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+.game-page-wrapper .cell {
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  transition: transform 0.1s ease;
+}
+.game-page-wrapper .cell.tile-2   { background: #3d5a80; color: #fff; }
+.game-page-wrapper .cell.tile-4   { background: #2196F3; color: #fff; }
+.game-page-wrapper .cell.tile-8   { background: #1976D2; color: #fff; }
+.game-page-wrapper .cell.tile-16  { background: #0d47a1; color: #fff; }
+.game-page-wrapper .cell.tile-32  { background: #FF5722; color: #fff; }
+.game-page-wrapper .cell.tile-64  { background: #e64a19; color: #fff; }
+.game-page-wrapper .cell.tile-128 { background: #4CAF50; color: #fff; font-size: 1.2rem; }
+.game-page-wrapper .cell.tile-256 { background: #388e3c; color: #fff; font-size: 1.2rem; }
+.game-page-wrapper .cell.tile-512 { background: #2e7d32; color: #fff; font-size: 1.1rem; }
+.game-page-wrapper .cell.tile-1024{ background: #1b5e20; color: #fff; font-size: 0.9rem; }
+.game-page-wrapper .cell.tile-2048{ background: #ffc107; color: #1a1a2e; font-size: 0.9rem; }
+.game-page-wrapper .cell.tile-super { background: #ff9800; color: #1a1a2e; font-size: 0.8rem; }
+.game-page-wrapper .cell.empty { background: rgba(255,255,255,0.08); color: transparent; }
+.game-page-wrapper .controls { margin-top: 8px; }
+.game-page-wrapper button {
+  padding: 12px 24px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  background: #4CAF50;
+  color: #fff;
+}
+.game-page-wrapper button:hover { background: #45a049; }
+.game-page-wrapper button:active { transform: scale(0.98); }
+.game-page-wrapper .msg {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 10;
+}
+.game-page-wrapper .msg.show { display: flex; }
+.game-page-wrapper .msg h2 { font-size: 1.8rem; }
+.game-page-wrapper .msg.win h2 { color: #4CAF50; }
+.game-page-wrapper .msg.over h2 { color: #FF5722; }
+.game-page-wrapper .hint { font-size: 0.85rem; opacity: 0.7; margin-top: 8px; }
+
+</style>
+</head>
+<body>
+  <div class="game-page-wrapper">
+  <h1>2048</h1>
+  <p class="sub">숫자를 합쳐 2048을 만드세요!</p>
+  <div class="score-wrap">
+    <div class="score-box">점수: <span id="score">0</span></div>
+    <div class="score-box">최고: <span id="best">0</span></div>
+  </div>
+  <div id="board"></div>
+  <p class="hint">방향키 또는 스와이프로 이동</p>
+  <div class="controls">
+    <button type="button" id="restart">다시 하기</button>
+  </div>
+
+  <div class="msg" id="msgWin">
+    <h2>🎉 2048 달성!</h2>
+    <button type="button" id="continueWin">계속하기</button>
+    <button type="button" id="restartWin">다시 하기</button>
+  </div>
+  <div class="msg over" id="msgOver">
+    <h2>게임 오버</h2>
+    <button type="button" id="restartOver">다시 하기</button>
+  </div>
+
+  <script>
+/**
+ * 2048 비즈니스 로직 (DOM 없음)
+ * - 그리드, 점수, 이동·합치기, 승리/게임오버 판정
+ */
+(function(global) {
+  'use strict';
+  var SIZE = 4;
+  var grid = [];
+  var score = 0;
+  var best = parseInt(global.localStorage.getItem('2048-best') || '0', 10);
+
+  function initGrid() {
+    grid = [];
+    for (var r = 0; r < SIZE; r++) {
+      grid[r] = [];
+      for (var c = 0; c < SIZE; c++) grid[r][c] = 0;
+    }
+  }
+
+  function mergeLine(line) {
+    var arr = line.filter(function(x) { return x !== 0; });
+    var out = [];
+    var i = 0;
+    while (i < arr.length) {
+      if (i + 1 < arr.length && arr[i] === arr[i + 1]) {
+        out.push(arr[i] * 2);
+        score += arr[i] * 2;
+        i += 2;
+      } else {
+        out.push(arr[i]);
+        i += 1;
+      }
+    }
+    while (out.length < SIZE) out.push(0);
+    return out;
+  }
+
+  function moveLeft() {
+    var changed = false;
+    for (var r = 0; r < SIZE; r++) {
+      var row = grid[r].slice();
+      var merged = mergeLine(row);
+      for (var c = 0; c < SIZE; c++) {
+        if (grid[r][c] !== merged[c]) changed = true;
+        grid[r][c] = merged[c];
+      }
+    }
+    return changed;
+  }
+
+  function moveRight() {
+    var changed = false;
+    for (var r = 0; r < SIZE; r++) {
+      var row = grid[r].slice().reverse();
+      var merged = mergeLine(row).reverse();
+      for (var c = 0; c < SIZE; c++) {
+        if (grid[r][c] !== merged[c]) changed = true;
+        grid[r][c] = merged[c];
+      }
+    }
+    return changed;
+  }
+
+  function moveUp() {
+    var changed = false;
+    for (var c = 0; c < SIZE; c++) {
+      var col = [];
+      for (var r = 0; r < SIZE; r++) col.push(grid[r][c]);
+      var merged = mergeLine(col);
+      for (var r = 0; r < SIZE; r++) {
+        if (grid[r][c] !== merged[r]) changed = true;
+        grid[r][c] = merged[r];
+      }
+    }
+    return changed;
+  }
+
+  function moveDown() {
+    var changed = false;
+    for (var c = 0; c < SIZE; c++) {
+      var col = [];
+      for (var r = 0; r < SIZE; r++) col.push(grid[r][c]);
+      var merged = mergeLine(col.slice().reverse()).reverse();
+      for (var r = 0; r < SIZE; r++) {
+        if (grid[r][c] !== merged[r]) changed = true;
+        grid[r][c] = merged[r];
+      }
+    }
+    return changed;
+  }
+
+  function addRandom() {
+    var empty = [];
+    for (var r = 0; r < SIZE; r++)
+      for (var c = 0; c < SIZE; c++)
+        if (grid[r][c] === 0) empty.push({ r: r, c: c });
+    if (empty.length === 0) return false;
+    var cell = empty[Math.floor(Math.random() * empty.length)];
+    grid[cell.r][cell.c] = Math.random() < 0.9 ? 2 : 4;
+    return true;
+  }
+
+  function hasWon() {
+    for (var r = 0; r < SIZE; r++)
+      for (var c = 0; c < SIZE; c++)
+        if (grid[r][c] === 2048) return true;
+    return false;
+  }
+
+  function isGameOver() {
+    for (var r = 0; r < SIZE; r++)
+      for (var c = 0; c < SIZE; c++) {
+        if (grid[r][c] === 0) return false;
+        var v = grid[r][c];
+        if (r < SIZE - 1 && grid[r + 1][c] === v) return false;
+        if (c < SIZE - 1 && grid[r][c + 1] === v) return false;
+      }
+    return true;
+  }
+
+  function saveBest() {
+    if (score > best) {
+      best = score;
+      global.localStorage.setItem('2048-best', String(best));
+    }
+  }
+
+  function restart() {
+    initGrid();
+    score = 0;
+    addRandom();
+    addRandom();
+  }
+
+  function move(dir) {
+    var ok = false;
+    if (dir === 'left') ok = moveLeft();
+    else if (dir === 'right') ok = moveRight();
+    else if (dir === 'up') ok = moveUp();
+    else if (dir === 'down') ok = moveDown();
+    if (ok) addRandom();
+    return ok;
+  }
+
+  global.Game2048 = {
+    getGrid: function() { return grid; },
+    getScore: function() { return score; },
+    getBest: function() { saveBest(); return best; },
+    getSize: function() { return SIZE; },
+    move: move,
+    hasWon: hasWon,
+    isGameOver: isGameOver,
+    restart: restart
+  };
+})(typeof window !== 'undefined' ? window : this);
+
+</script>
+  <script>
+/**
+ * 2048 UI 로직 (렌더링·이벤트, Game2048 호출)
+ */
+(function() {
+  'use strict';
+  var boardEl = document.getElementById('board');
+  var scoreEl = document.getElementById('score');
+  var bestEl = document.getElementById('best');
+  var msgWin = document.getElementById('msgWin');
+  var msgOver = document.getElementById('msgOver');
+  var game = window.Game2048;
+
+  function render() {
+    var grid = game.getGrid();
+    var size = game.getSize();
+    boardEl.innerHTML = '';
+    for (var r = 0; r < size; r++) {
+      for (var c = 0; c < size; c++) {
+        var v = grid[r][c];
+        var cell = document.createElement('div');
+        cell.className = 'cell';
+        if (v === 0) {
+          cell.classList.add('empty');
+        } else {
+          cell.classList.add(v <= 2048 ? 'tile-' + v : 'tile-super');
+          cell.textContent = v;
+        }
+        boardEl.appendChild(cell);
+      }
+    }
+    scoreEl.textContent = game.getScore();
+    bestEl.textContent = game.getBest();
+  }
+
+  function onMove(dir) {
+    if (msgOver.classList.contains('show')) return;
+    if (!game.move(dir)) return;
+    render();
+    if (game.hasWon() && !localStorage.getItem('2048-claimed')) msgWin.classList.add('show');
+    if (game.isGameOver()) msgOver.classList.add('show');
+  }
+
+  function onRestart() {
+    game.restart();
+    render();
+    msgWin.classList.remove('show');
+    msgOver.classList.remove('show');
+  }
+
+  document.getElementById('restart').onclick = onRestart;
+  document.getElementById('restartOver').onclick = onRestart;
+  document.getElementById('restartWin').onclick = function() {
+    localStorage.setItem('2048-claimed', '1');
+    msgWin.classList.remove('show');
+  };
+  document.getElementById('continueWin').onclick = function() {
+    msgWin.classList.remove('show');
+  };
+
+  document.addEventListener('keydown', function(e) {
+    if (msgWin.classList.contains('show') || msgOver.classList.contains('show')) return;
+    switch (e.key) {
+      case 'ArrowUp': e.preventDefault(); onMove('up'); break;
+      case 'ArrowDown': e.preventDefault(); onMove('down'); break;
+      case 'ArrowLeft': e.preventDefault(); onMove('left'); break;
+      case 'ArrowRight': e.preventDefault(); onMove('right'); break;
+    }
+  });
+
+  var touchStartX = 0, touchStartY = 0;
+  document.addEventListener('touchstart', function(e) {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+  document.addEventListener('touchend', function(e) {
+    var dx = e.changedTouches[0].clientX - touchStartX;
+    var dy = e.changedTouches[0].clientY - touchStartY;
+    var min = 40;
+    if (Math.abs(dx) < min && Math.abs(dy) < min) return;
+    if (Math.abs(dx) >= Math.abs(dy)) {
+      onMove(dx > 0 ? 'right' : 'left');
+    } else {
+      onMove(dy > 0 ? 'down' : 'up');
+    }
+  }, { passive: true });
+
+  onRestart();
+})();
+
+</script>
+  </div>
+</body>
+</html>

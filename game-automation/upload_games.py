@@ -105,6 +105,39 @@ def _wrap_in_iframe_src(game_url, title):
     )
 
 
+def build_to_dir(output_dir):
+    """manifest 기준으로 인라인된 게임 HTML을 output_dir에 쓴다. GitHub Pages 등 정적 호스팅용."""
+    if not os.path.isfile(MANIFEST_PATH):
+        print(f"⚠️  manifest 없음: {MANIFEST_PATH}")
+        return 0
+    with open(MANIFEST_PATH, "r", encoding="utf-8") as f:
+        games = json.load(f)
+    if not isinstance(games, list):
+        print("⚠️  manifest는 배열이어야 합니다.")
+        return 0
+    os.makedirs(output_dir, exist_ok=True)
+    count = 0
+    for item in games:
+        file_name = item.get("file")
+        title = item.get("title")
+        slug = item.get("slug")
+        if not file_name or not slug:
+            continue
+        path = os.path.join(paths.GAMES_DIR, file_name)
+        if not os.path.isfile(path):
+            print(f"⚠️  파일 없음: {path}")
+            continue
+        with open(path, "r", encoding="utf-8") as f:
+            full_html = f.read()
+        full_html = _inline_assets(full_html, path)
+        out_path = os.path.join(output_dir, slug + ".html")
+        with open(out_path, "w", encoding="utf-8") as f:
+            f.write(full_html)
+        print(f"  {slug}.html ← {title}")
+        count += 1
+    return count
+
+
 def main():
     """manifest.json에 등록된 게임 HTML을 WordPress에 업로드한다."""
     print("=" * 50)
@@ -169,4 +202,17 @@ def main():
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "--github-pages":
+        out_dir = os.path.join(paths.ROOT, "docs", "games")
+        print("=" * 50)
+        print("📦 GitHub Pages용 게임 빌드")
+        print("=" * 50)
+        print(f"출력: {out_dir}")
+        n = build_to_dir(out_dir)
+        print("\n" + "=" * 50)
+        print(f"✅ {n}개 빌드 완료")
+        print("Repo → Settings → Pages → Source: Deploy from branch → main → /docs")
+        print("게임 URL 예: https://<username>.github.io/game-test/games/2048-game.html")
+        print("=" * 50)
+        sys.exit(0 if n else 1)
     main()
