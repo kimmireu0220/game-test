@@ -87,3 +87,24 @@ def publish_game_page(title, slug, content):
     """게임 페이지 게시 또는 업데이트. 제목에 ' - 무료 온라인 게임'을 붙인다."""
     full_title = title + " - 무료 온라인 게임"
     return _upsert_page(full_title, slug, content)
+
+
+def upload_game_html(slug, html_bytes, filename=None):
+    """게임 HTML을 미디어로 업로드하고 접근 URL을 반환한다.
+    반환된 URL을 iframe src로 쓰면 모든 브라우저에서 스크립트가 정상 실행된다.
+    """
+    if filename is None:
+        filename = f"{slug}.html"
+    url = f"{config.WP_URL}/wp-json/wp/v2/media"
+    auth = _auth()
+    files = {"file": (filename, html_bytes, "text/html; charset=utf-8")}
+    try:
+        r = requests.post(url, auth=auth, files=files, timeout=30)
+        if r.status_code in (200, 201):
+            data = r.json()
+            return data.get("source_url") or data.get("link")
+        print(f"⚠️ 미디어 업로드 실패: {r.status_code} {r.text[:150]}")
+        return None
+    except (requests.RequestException, ValueError, KeyError) as e:  # pylint: disable=broad-exception-caught
+        print(f"⚠️ 미디어 업로드 오류: {e}")
+        return None

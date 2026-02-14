@@ -49,12 +49,26 @@ def main():
             cells = fl.locator("#board .cell")
             cell_count = cells.count()
             wrapper_visible = fl.locator(".game-page-wrapper").count() > 0
+            # 실제 플레이 가능 여부: iframe 포커스 후 방향키 → 타일(2/4) 또는 점수 변화
+            playable = False
+            if cell_count == 16:
+                try:
+                    fl.locator("#board").first.click()
+                    page.keyboard.press("ArrowRight")
+                    page.wait_for_timeout(300)
+                    non_empty = fl.locator("#board .cell:not(.empty)").count()
+                    score_el = fl.locator("#score").first
+                    score_text = score_el.text_content() or "0"
+                    playable = non_empty >= 1 or (score_text.isdigit() and int(score_text) > 0)
+                except Exception:
+                    pass
         else:
             wrapper_visible = page.locator(".game-page-wrapper").count() > 0
             board = page.locator("#board")
             board_visible = board.count() > 0 and board.first.is_visible()
             cells = page.locator("#board .cell")
             cell_count = cells.count()
+            playable = False
 
         title_ok = "2048" in page.title() or page.locator("h1:has-text('2048')").count() > 0
         page.screenshot(path=screenshot_path)
@@ -69,10 +83,14 @@ def main():
         print(f"iframe 내 .game-page-wrapper: {'✅' if wrapper_visible else '❌'}")
         print(f"iframe 내 #board 노출: {'✅' if board_visible else '❌'}")
         print(f"iframe 내 #board .cell 개수 (16개면 정상): {cell_count}")
+        if has_iframe and cell_count == 16:
+            print(f"방향키 반응 (실제 플레이 가능): {'✅' if playable else '❌'}")
         print(f"스크린샷: {os.path.abspath(screenshot_path)}")
         print("=" * 50)
-        if title_ok and has_iframe and wrapper_visible and board_visible and cell_count == 16:
-            print("✅ iframe 내 보드·스타일·스크립트 정상 동작")
+        if title_ok and has_iframe and wrapper_visible and board_visible and cell_count == 16 and playable:
+            print("✅ iframe 내 보드·스타일·스크립트 정상 동작 (플레이 가능)")
+        elif title_ok and has_iframe and cell_count == 16 and not playable:
+            print("⚠️ 보드는 보이지만 방향키 반응 없음. iframe 포커스/이벤트 확인 필요.")
         elif not has_iframe:
             print("⚠️ iframe이 없습니다. upload_games.py가 iframe 방식으로 업로드했는지 확인하세요.")
         else:

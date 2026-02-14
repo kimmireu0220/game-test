@@ -1,15 +1,13 @@
 """
 content/games/ 의 HTML 파일을 manifest.json 기준으로 WordPress 게임 페이지로 업로드합니다.
-HTML에서 <link rel="stylesheet" href="...">, <script src="...">는 같은 폴더의 파일로 인라인됩니다.
-
-WordPress가 본문에서 <style>/<script>를 제거하거나 실행하지 않는 경우를 위해
-기본값으로 iframe + data URL 방식을 사용합니다 (전체 게임 HTML을 iframe에 넣어 실행).
+HTML 내 상대 경로 CSS/JS는 인라인한 뒤, 게임 HTML을 미디어로 업로드하고
+페이지 본문에는 iframe src=미디어URL 만 넣습니다 (모든 브라우저에서 스크립트 실행).
 
 실행 (프로젝트 루트에서):
   python game-automation/upload_games.py
 """
 
-import base64
+import html
 import json
 import os
 import re
@@ -64,25 +62,24 @@ def _inline_assets(html_content, html_path):
     return html_content
 
 
-def _body_fragment(html_content):
-    """전체 HTML에서 body 내부만 추출해 단일 루트 div로 감싼다."""
-    match = re.search(r"<body[^>]*>(.*)</body>", html_content, re.DOTALL | re.IGNORECASE)
-    if not match:
-        return html_content
-    inner = match.group(1).strip()
-    return '<div class="game-page-wrapper">\n' + inner + "\n</div>"
-
-
-def _wrap_in_iframe(full_html, title):
-    """전체 HTML을 data URL로 넣은 iframe만 WordPress에 전송한다.
-    WP가 style/script를 제거해도 iframe 안에서는 그대로 실행된다.
-    """
-    b64 = base64.b64encode(full_html.encode("utf-8")).decode("ascii")
-    src = f"data:text/html;charset=utf-8;base64,{b64}"
+def _wrap_in_iframe_srcdoc(full_html, title):
+    """전체 HTML을 srcdoc으로 넣은 iframe (WP가 이스케이프하면 깨질 수 있음)."""
+    escaped = html.escape(full_html, quote=True)
+    title_attr = title.replace('"', "&quot;")
     return (
         '<div class="game-iframe-wrap" style="min-height:520px;">'
-        f'<iframe src="{src}" style="width:100%;height:520px;border:0;" '
-        f'title="{title.replace(chr(34), "&quot;")}"></iframe></div>'
+        f'<iframe srcdoc="{escaped}" style="width:100%;height:520px;border:0;" '
+        f'title="{title_attr}"></iframe></div>'
+    )
+
+
+def _wrap_in_iframe_src(game_url, title):
+    """미디어 URL을 iframe src로 사용. 모든 브라우저에서 스크립트 정상 실행."""
+    title_attr = title.replace('"', "&quot;")
+    return (
+        '<div class="game-iframe-wrap" style="min-height:520px;">'
+        f'<iframe src="{game_url}" style="width:100%;height:520px;border:0;" '
+        f'title="{title_attr}"></iframe></div>'
     )
 
 
@@ -123,8 +120,17 @@ def main():
         with open(path, "r", encoding="utf-8") as f:
             full_html = f.read()
         full_html = _inline_assets(full_html, path)
-        # iframe + data URL: WP가 style/script를 제거해도 iframe 안에서 실행됨
-        content = _wrap_in_iframe(full_html, title)
+
+        # 1) 게임 HTML을 미디어로 업로드 → iframe src=URL (모든 브라우저에서 동작)
+        # 2) 실패 시 srcdoc fallback
+        full_bytes = full_html.encode("utf-8")
+        game_url = wordpress_client.upload_game_html(slug, full_bytes)
+        if game_url:
+            content = _wrap_in_iframe_src(game_url, title)
+            print(f"   미디어 URL → iframe src")
+        else:
+            content = _wrap_in_iframe_srcdoc(full_html, title)
+            print(f"   srcdoc fallback")
 
         print(f"\n[{i}/{len(games)}] {title} (/{slug})")
         url = wordpress_client.publish_game_page(title, slug, content)
