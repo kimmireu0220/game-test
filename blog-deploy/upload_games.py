@@ -35,7 +35,12 @@ def _inline_binary(content, base_dir, rel_path, mime_type):
     if key not in content:
         return content
     with open(path, "rb") as f:
-        data_url = "data:" + mime_type + ";base64," + base64.b64encode(f.read()).decode("ascii")
+        data_url = (
+            "data:"
+            + mime_type
+            + ";base64,"
+            + base64.b64encode(f.read()).decode("ascii")
+        )
     return content.replace(key, '"' + data_url + '"')
 
 
@@ -91,10 +96,14 @@ def _inline_assets(html_content, html_path):
             else []
         )
         if bgm_files and "__BGM_SOURCES_ARRAY__" in content:
-            array_str = "[" + ",".join('"sounds/bgm/' + f + '"' for f in bgm_files) + "]"
+            array_str = (
+                "[" + ",".join('"sounds/bgm/' + f + '"' for f in bgm_files) + "]"
+            )
             content = content.replace("__BGM_SOURCES_ARRAY__", array_str)
         for name in bgm_files:
-            content = _inline_binary(content, base_dir, "sounds/bgm/" + name, "audio/mpeg")
+            content = _inline_binary(
+                content, base_dir, "sounds/bgm/" + name, "audio/mpeg"
+            )
         return "<script>\n" + content + "\n</script>"
 
     def replace_img_src(html_text, rel_path, base_dir_inner):
@@ -103,7 +112,9 @@ def _inline_assets(html_content, html_path):
         if not os.path.isfile(path):
             return html_text
         with open(path, "rb") as f:
-            data_url = "data:image/png;base64," + base64.b64encode(f.read()).decode("ascii")
+            data_url = "data:image/png;base64," + base64.b64encode(f.read()).decode(
+                "ascii"
+            )
         return html_text.replace('src="' + rel_path + '"', 'src="' + data_url + '"')
 
     html_content = re.sub(
@@ -253,7 +264,9 @@ if __name__ == "__main__":
         print("\n" + "=" * 50)
         print(f"✅ {num_built}개 빌드 완료")
         print("Repo → Settings → Pages → Source: Deploy from branch → main → /docs")
-        print("게임 URL 예: https://<username>.github.io/game-test/games/2048-game.html")
+        print(
+            "게임 URL 예: https://<username>.github.io/game-test/games/2048-game.html"
+        )
         print("=" * 50)
         sys.exit(0 if num_built else 1)
     main()

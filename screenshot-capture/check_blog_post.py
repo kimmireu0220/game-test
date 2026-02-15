@@ -29,7 +29,7 @@ def main():
             page.wait_for_timeout(2000)
             page.screenshot(path=OUT_PATH, full_page=True)
             print(f"스크린샷 저장: {OUT_PATH}")
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             print(f"실패: {e}")
         finally:
             browser.close()

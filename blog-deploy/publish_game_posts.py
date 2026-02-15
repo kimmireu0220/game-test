@@ -40,6 +40,7 @@ def _collect_screenshots(game_dir):
     if not os.path.isdir(dir_path):
         return []
     files = glob.glob(os.path.join(dir_path, "*.png"))
+
     # 파일명 앞 숫자로 정렬 (예: 01-start.png, 02-play.png)
     def sort_key(path):
         base = os.path.basename(path)
@@ -82,7 +83,9 @@ def _build_post_content(summary, image_urls_with_captions, game_url):
     return "\n".join(parts)
 
 
-def _publish_one(slug, title_from_manifest, post_config, category_id=None, game_dir=None):
+def _publish_one(
+    slug, title_from_manifest, post_config, category_id=None, game_dir=None
+):
     """한 게임에 대한 소개 포스트를 발행한다. 성공 시 True."""
     post_title = post_config.get("post_title") or (title_from_manifest + " 소개")
     summary = post_config.get("summary") or ""

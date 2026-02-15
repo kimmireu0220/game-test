@@ -1,12 +1,12 @@
 """
 Playwright로 timing-game 단계별 스크린샷 촬영.
-저장: content/games/timing-game/screenshots/01-nickname.png ~ 07-round-result.png (7장).
+저장: content/games/timing-game/screenshots/01-nickname.png ~ 09-round-result.png (9장).
 
 실행 (프로젝트 루트에서):
   python screenshot-capture/capture_timing_game_screenshots.py
 
 로컬 서버 필요: python3 -m http.server 8765
-Supabase 미연동 시 01~02만 촬영 가능, 03~07은 대기실/라운드 UI 재현으로 촬영.
+Supabase 미연동 시 01~04만 촬영 가능, 05~09는 대기실/라운드 UI 재현으로 촬영.
 """
 
 import os
@@ -41,19 +41,50 @@ def main():
             print("저장: 01-nickname.png")
 
             # 2) 방 만들기 화면 – 방 제목 입력 후 촬영
-            page.evaluate("""() => {
+            page.evaluate(
+                """() => {
               document.querySelectorAll('.game-page-wrapper .screen').forEach(el => el.classList.add('hidden'));
               var create = document.getElementById('screen-create');
               if (create) create.classList.remove('hidden');
-            }""")
+            }"""
+            )
             page.wait_for_timeout(300)
             page.locator("#input-room-name").fill("10초 맞추기")
             page.wait_for_timeout(300)
             page.screenshot(path=os.path.join(OUT_DIR, "02-create.png"))
             print("저장: 02-create.png")
 
-            # 3) 대기실 화면 – 참가자 2명(방장+친구) 실제 플레이처럼
-            page.evaluate("""() => {
+            # 3) 방 만들기 완료 – 6자리 코드 표시
+            page.evaluate(
+                """() => {
+              document.querySelectorAll('.game-page-wrapper .screen').forEach(el => el.classList.add('hidden'));
+              var done = document.getElementById('screen-create-done');
+              if (done) done.classList.remove('hidden');
+              var codeEl = document.getElementById('display-room-code');
+              if (codeEl) codeEl.textContent = '123456';
+            }"""
+            )
+            page.wait_for_timeout(400)
+            page.screenshot(path=os.path.join(OUT_DIR, "03-create-done.png"))
+            print("저장: 03-create-done.png")
+
+            # 4) 방 들어가기 – 친구가 입장코드 123456 입력
+            page.evaluate(
+                """() => {
+              document.querySelectorAll('.game-page-wrapper .screen').forEach(el => el.classList.add('hidden'));
+              var join = document.getElementById('screen-join');
+              if (join) join.classList.remove('hidden');
+              var input = document.getElementById('input-join-code');
+              if (input) input.value = '123456';
+            }"""
+            )
+            page.wait_for_timeout(400)
+            page.screenshot(path=os.path.join(OUT_DIR, "04-join.png"))
+            print("저장: 04-join.png")
+
+            # 5) 대기실 화면 – 참가자 2명(방장+친구) 실제 플레이처럼
+            page.evaluate(
+                """() => {
               document.querySelectorAll('.game-page-wrapper .screen').forEach(el => el.classList.add('hidden'));
               var lobby = document.getElementById('screen-lobby');
               if (lobby) lobby.classList.remove('hidden');
@@ -86,13 +117,15 @@ def main():
               }
               var btn = document.querySelector('#screen-lobby .host-only');
               if (btn) btn.classList.remove('hidden');
-            }""")
+            }"""
+            )
             page.wait_for_timeout(400)
-            page.screenshot(path=os.path.join(OUT_DIR, "03-lobby.png"))
-            print("저장: 03-lobby.png")
+            page.screenshot(path=os.path.join(OUT_DIR, "05-lobby.png"))
+            print("저장: 05-lobby.png")
 
-            # 4) 카운트다운 모달 – 3, 2, 1, 배경(라운드 UI)이 흐리게 보이도록
-            page.evaluate("""() => {
+            # 6) 카운트다운 모달 – 3, 2, 1, 배경(라운드 UI)이 흐리게 보이도록
+            page.evaluate(
+                """() => {
               document.querySelectorAll('.game-page-wrapper .screen').forEach(el => el.classList.add('hidden'));
               var round = document.getElementById('screen-round');
               if (round) round.classList.remove('hidden');
@@ -142,13 +175,15 @@ def main():
               var countdownEl = document.getElementById('round-countdown');
               if (overlay) overlay.classList.remove('hidden');
               if (countdownEl) countdownEl.textContent = '2';
-            }""")
+            }"""
+            )
             page.wait_for_timeout(400)
-            page.screenshot(path=os.path.join(OUT_DIR, "04-countdown.png"))
-            print("저장: 04-countdown.png")
+            page.screenshot(path=os.path.join(OUT_DIR, "06-countdown.png"))
+            print("저장: 06-countdown.png")
 
-            # 5·6) 라운드 화면 – 목표 초, 타이머(00:02 → ??:??), 2인 플레이 구역, 누르기 버튼
-            page.evaluate("""() => {
+            # 7·8) 라운드 화면 – 목표 초, 타이머(00:02 → ??:??), 2인 플레이 구역, 누르기 버튼
+            page.evaluate(
+                """() => {
               document.querySelectorAll('.game-page-wrapper .screen').forEach(el => el.classList.add('hidden'));
               var round = document.getElementById('screen-round');
               if (round) round.classList.remove('hidden');
@@ -196,28 +231,34 @@ def main():
               if (btn) { btn.disabled = false; btn.textContent = '누르기'; btn.classList.remove('hidden'); btn.style.display = ''; }
               var endActions = document.getElementById('round-end-actions');
               if (endActions) endActions.classList.add('hidden');
-            }""")
+            }"""
+            )
             page.wait_for_timeout(400)
             # 5) 3초 전까지 보이는 실시간 타이머(예: 00:02)
-            page.evaluate("""() => {
+            page.evaluate(
+                """() => {
               var timer = document.getElementById('round-live-timer');
               if (timer) { timer.textContent = '00:02'; timer.style.display = ''; }
-            }""")
+            }"""
+            )
             page.wait_for_timeout(300)
-            page.screenshot(path=os.path.join(OUT_DIR, "05-round-timer.png"))
-            print("저장: 05-round-timer.png")
+            page.screenshot(path=os.path.join(OUT_DIR, "07-round-timer.png"))
+            print("저장: 07-round-timer.png")
 
-            # 6) 3초 이후 ??:??로 바뀜
-            page.evaluate("""() => {
+            # 8) 3초 이후 ??:??로 바뀜
+            page.evaluate(
+                """() => {
               var timer = document.getElementById('round-live-timer');
               if (timer) { timer.textContent = '??:??'; timer.style.display = ''; }
-            }""")
+            }"""
+            )
             page.wait_for_timeout(300)
-            page.screenshot(path=os.path.join(OUT_DIR, "06-round.png"))
-            print("저장: 06-round.png")
+            page.screenshot(path=os.path.join(OUT_DIR, "08-round.png"))
+            print("저장: 08-round.png")
 
-            # 7) 라운드 결과 화면 – 실제 앱과 동일: slot.insertBefore(winBadge, zone), CSS로 위쪽 중앙
-            page.evaluate("""() => {
+            # 9) 라운드 결과 화면 – 실제 앱과 동일: slot.insertBefore(winBadge, zone), CSS로 위쪽 중앙
+            page.evaluate(
+                """() => {
               var timer = document.getElementById('round-live-timer');
               if (timer) { timer.textContent = '??:??'; timer.style.display = ''; }
               var container = document.getElementById('round-player-zones');
@@ -255,7 +296,8 @@ def main():
               if (msg) msg.style.display = 'none';
               var timer = document.getElementById('round-live-timer');
               if (timer) timer.style.display = 'none';
-            }""")
+            }"""
+            )
             page.wait_for_timeout(300)
             page.wait_for_function(
                 "document.querySelector('.round-zone-win-badge') && "
@@ -263,8 +305,8 @@ def main():
                 timeout=3000,
             )
             page.wait_for_timeout(200)
-            page.screenshot(path=os.path.join(OUT_DIR, "07-round-result.png"))
-            print("저장: 07-round-result.png")
+            page.screenshot(path=os.path.join(OUT_DIR, "09-round-result.png"))
+            print("저장: 09-round-result.png")
         except (TimeoutError, OSError, PlaywrightError) as e:
             print(f"오류: {e}")
         finally:
