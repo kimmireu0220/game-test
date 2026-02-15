@@ -91,7 +91,8 @@ def _upsert_page(title, slug, content):
         pages = _list_pages_by_slug(auth, base, slug, include_trash=False)
         numbered = [p for p in pages if (p.get("slug") or "").startswith(slug + "-")]
         exact_pages = [p for p in pages if (p.get("slug") or "") == slug]
-        # slug-숫자(예: timing-game-4)가 있을 때만 정확히 slug(예: timing-game) 페이지 삭제 → timing-game 제거, timing-game-4만 사용
+        # slug-숫자(예: timing-game-4)가 있을 때만 정확히 slug(예: timing-game) 페이지 삭제
+        # → timing-game 제거, timing-game-4만 사용
         if numbered and exact_pages:
             for p in exact_pages:
                 if _delete_page(p["id"], auth):

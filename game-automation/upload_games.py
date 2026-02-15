@@ -18,8 +18,10 @@ _script_dir = os.path.dirname(os.path.abspath(__file__))
 if _script_dir not in sys.path:
     sys.path.insert(0, _script_dir)
 
-import config  # noqa: F401 — .env 로드 (SUPABASE_URL, SUPABASE_ANON_KEY 등)
+from config import load_dotenv
 import paths
+
+load_dotenv()  # SUPABASE_URL, SUPABASE_ANON_KEY 등 .env 로드
 
 MANIFEST_PATH = os.path.join(paths.GAMES_DIR, "manifest.json")
 
@@ -83,7 +85,11 @@ def _inline_assets(html_content, html_path):
             content = _inline_binary(content, base_dir, rel_path, mime_type)
         # 타이머 BGM: sounds/bgm/ 폴더 스캔 후 인라인 + BGM_SOURCES 배열 주입
         bgm_dir = os.path.join(base_dir, "sounds", "bgm")
-        bgm_files = sorted([f for f in os.listdir(bgm_dir) if f.endswith(".mp3")]) if os.path.isdir(bgm_dir) else []
+        bgm_files = (
+            sorted([f for f in os.listdir(bgm_dir) if f.endswith(".mp3")])
+            if os.path.isdir(bgm_dir)
+            else []
+        )
         if bgm_files and "__BGM_SOURCES_ARRAY__" in content:
             array_str = "[" + ",".join('"sounds/bgm/' + f + '"' for f in bgm_files) + "]"
             content = content.replace("__BGM_SOURCES_ARRAY__", array_str)
@@ -149,7 +155,7 @@ def build_to_dir(output_dir):
         print("⚠️  manifest는 배열이어야 합니다.")
         return 0
     os.makedirs(output_dir, exist_ok=True)
-    count = 0
+    num_written = 0
     for item in games:
         file_name = item.get("file")
         title = item.get("title")
@@ -167,8 +173,8 @@ def build_to_dir(output_dir):
         with open(out_path, "w", encoding="utf-8") as f:
             f.write(full_html)
         print(f"  {slug}.html ← {title}")
-        count += 1
-    return count
+        num_written += 1
+    return num_written
 
 
 def main():
@@ -243,11 +249,11 @@ if __name__ == "__main__":
         print("📦 GitHub Pages용 게임 빌드")
         print("=" * 50)
         print(f"출력: {out_dir}")
-        n = build_to_dir(out_dir)
+        num_built = build_to_dir(out_dir)
         print("\n" + "=" * 50)
-        print(f"✅ {n}개 빌드 완료")
+        print(f"✅ {num_built}개 빌드 완료")
         print("Repo → Settings → Pages → Source: Deploy from branch → main → /docs")
         print("게임 URL 예: https://<username>.github.io/game-test/games/2048-game.html")
         print("=" * 50)
-        sys.exit(0 if n else 1)
+        sys.exit(0 if num_built else 1)
     main()
