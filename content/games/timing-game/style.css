@@ -13,6 +13,30 @@
   touch-action: manipulation;
   border-radius: 12px;
 }
+.game-page-wrapper .game-bgm-toggle-wrap {
+  position: absolute;
+  top: 28px;
+  right: 28px;
+  z-index: 100;
+}
+.game-page-wrapper #btn-bgm-toggle {
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #eee;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.game-page-wrapper #btn-bgm-toggle img {
+  width: 32px;
+  height: 32px;
+  display: block;
+}
+.game-page-wrapper #btn-bgm-toggle:hover { background: rgba(255, 255, 255, 0.25); }
+.game-page-wrapper #btn-bgm-toggle.muted { opacity: 0.6; }
 .game-page-wrapper .screen { display: flex; flex-direction: column; align-items: center; gap: 24px; max-width: 360px; width: 100%; }
 .game-page-wrapper .screen.hidden { display: none; }
 .game-page-wrapper label { align-self: flex-start; font-size: 0.9rem; }
@@ -68,7 +92,7 @@
   margin-left: auto;
 }
 .game-page-wrapper #lobby-players .lobby-player-host {
-  margin-left: 12px;
+  margin-left: 6px;
   display: inline-flex;
   align-items: center;
   vertical-align: middle;
@@ -128,7 +152,7 @@
   line-height: 1;
 }
 .game-page-wrapper .round-live-timer {
-  font-size: 3rem;
+  font-size: 4.5rem;
   font-weight: 700;
   color: #ff6b6b;
   font-variant-numeric: tabular-nums;

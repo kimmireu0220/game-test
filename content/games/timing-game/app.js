@@ -4,6 +4,7 @@
   var STORAGE_CLIENT_ID = "timing_game_client_id";
   var STORAGE_NICKNAME = "timing_game_nickname";
   var COUNTDOWN_SEC = 3;
+  var BGM_SOURCES = (typeof __BGM_SOURCES_ARRAY__ !== "undefined" ? __BGM_SOURCES_ARRAY__ : ["sounds/bgm/timer-bgm.mp3", "sounds/bgm/timer-bgm2.mp3", "sounds/bgm/timer-bgm3.mp3", "sounds/bgm/timer-bgm4.mp3", "sounds/bgm/timer-bgm5.mp3", "sounds/bgm/timer-bgm6.mp3"]);
   var countdownAudioContext = null;
 
   function playCountdownBeep(frequency, durationMs) {
@@ -75,6 +76,8 @@
   var state = {
     clientId: getClientId(),
     nickname: getNickname(),
+    bgmMuted: false,
+    bgmRoundIndex: 0,
     roomId: null,
     roomCode: null,
     roomName: null,
@@ -125,6 +128,23 @@
     document.getElementById("input-nickname").onchange = function () {
       setNickname(this.value.trim());
     };
+    var btnBgm = document.getElementById("btn-bgm-toggle");
+    var btnBgmIcon = document.getElementById("btn-bgm-icon");
+    if (btnBgm && btnBgmIcon) {
+      function updateBgmButton() {
+        btnBgmIcon.src = state.bgmMuted ? "images/bgm-off.png" : "images/bgm-on.png";
+        btnBgm.classList.toggle("muted", state.bgmMuted);
+      }
+      updateBgmButton();
+      btnBgm.onclick = function () {
+        state.bgmMuted = !state.bgmMuted;
+        updateBgmButton();
+        if (state.timerBgmAudio) {
+          if (state.bgmMuted) state.timerBgmAudio.pause();
+          else state.timerBgmAudio.play();
+        }
+      };
+    }
   }
 
   function createRoom() {
@@ -261,6 +281,10 @@
     if (state.liveTimerInterval != null) {
       clearInterval(state.liveTimerInterval);
       state.liveTimerInterval = null;
+    }
+    if (state.timerBgmAudio) {
+      state.timerBgmAudio.pause();
+      state.timerBgmAudio = null;
     }
     if (state.unsubscribeRoom) {
       state.unsubscribeRoom();
@@ -690,6 +714,10 @@
               clearInterval(state.liveTimerInterval);
               state.liveTimerInterval = null;
             }
+            if (state.timerBgmAudio) {
+              state.timerBgmAudio.pause();
+              state.timerBgmAudio = null;
+            }
           }
           state.liveTimerInterval = setInterval(function () {
             var elapsed = (Date.now() - startReal) / 1000;
@@ -706,6 +734,14 @@
             liveTimerEl.textContent = parts[0].padStart(2, "0") + ":" + (parts[1] || "00").slice(0, 2);
           }, 50);
           document.getElementById("btn-press").disabled = false;
+          try {
+            var bgmIdx = state.bgmRoundIndex % BGM_SOURCES.length;
+            state.bgmRoundIndex += 1;
+            state.timerBgmAudio = new Audio(BGM_SOURCES[bgmIdx]);
+            state.timerBgmAudio.loop = true;
+            state.timerBgmAudio.volume = 0.3;
+            if (!state.bgmMuted) state.timerBgmAudio.play();
+          } catch (e) {}
           if (state.roundPressesPollIntervalId != null) {
             clearInterval(state.roundPressesPollIntervalId);
             state.roundPressesPollIntervalId = null;
@@ -716,15 +752,14 @@
             hideLiveTimer();
             document.getElementById("btn-press").disabled = true;
             document.getElementById("btn-press").onclick = null;
-            var elapsed = (Date.now() - startReal) / 1000;
-            var offsetSec = elapsed - (state.currentRound.target_seconds || 0);
-            updateRoundZoneResult(state.clientId, elapsed, offsetSec);
             var sb = getSupabase();
             if (sb && state.currentRound) {
               sb.from("round_presses").insert({
                 round_id: state.currentRound.id,
                 client_id: state.clientId
-              }).then(function () {});
+              }).then(function () {
+                refreshRoundPressesDisplay();
+              });
             }
             if (state.waitAllPressesIntervalId != null) {
               clearInterval(state.waitAllPressesIntervalId);
@@ -761,6 +796,10 @@
               clearInterval(state.liveTimerInterval);
               state.liveTimerInterval = null;
             }
+            if (state.timerBgmAudio) {
+              state.timerBgmAudio.pause();
+              state.timerBgmAudio = null;
+            }
           }
           state.liveTimerInterval = setInterval(function () {
             var elapsed = (Date.now() - startReal) / 1000;
@@ -777,6 +816,14 @@
             liveTimerEl.textContent = parts[0].padStart(2, "0") + ":" + (parts[1] || "00").slice(0, 2);
           }, 50);
           document.getElementById("btn-press").disabled = false;
+          try {
+            var bgmIdx = state.bgmRoundIndex % BGM_SOURCES.length;
+            state.bgmRoundIndex += 1;
+            state.timerBgmAudio = new Audio(BGM_SOURCES[bgmIdx]);
+            state.timerBgmAudio.loop = true;
+            state.timerBgmAudio.volume = 0.3;
+            if (!state.bgmMuted) state.timerBgmAudio.play();
+          } catch (e) {}
           if (state.roundPressesPollIntervalId != null) {
             clearInterval(state.roundPressesPollIntervalId);
             state.roundPressesPollIntervalId = null;
@@ -787,15 +834,14 @@
             hideLiveTimer();
             document.getElementById("btn-press").disabled = true;
             document.getElementById("btn-press").onclick = null;
-            var elapsed = (Date.now() - startReal) / 1000;
-            var offsetSec = elapsed - (state.currentRound.target_seconds || 0);
-            updateRoundZoneResult(state.clientId, elapsed, offsetSec);
             var sb = getSupabase();
             if (sb && state.currentRound) {
               sb.from("round_presses").insert({
                 round_id: state.currentRound.id,
                 client_id: state.clientId
-              }).then(function () {});
+              }).then(function () {
+                refreshRoundPressesDisplay();
+              });
             }
             if (state.waitAllPressesIntervalId != null) {
               clearInterval(state.waitAllPressesIntervalId);
@@ -897,6 +943,10 @@
   }
 
   function showRoundEnd() {
+    if (state.timerBgmAudio) {
+      state.timerBgmAudio.pause();
+      state.timerBgmAudio = null;
+    }
     var gameplayWrap = document.getElementById("round-gameplay-wrap");
     var actionsWrap = document.getElementById("round-end-actions");
     var againBtn = document.getElementById("btn-round-play-again");
@@ -926,6 +976,12 @@
     // 게임 기록(몇 초에 누른지)은 그대로 두고, 승 수만 갱신 + 이번 라운드 승자 위에 Win! 표시
     var winCounts = state.winCounts || {};
     var winnerId = state.lastRoundWinnerId || null;
+    if (winnerId && state.clientId === winnerId) {
+      try {
+        var winAudio = new Audio("sounds/win.mp3");
+        winAudio.play();
+      } catch (e) {}
+    }
     document.querySelectorAll(".round-player-zone[data-client-id]").forEach(function (zone) {
       var cid = zone.dataset.clientId;
       var winsEl = zone.querySelector(".round-zone-wins");

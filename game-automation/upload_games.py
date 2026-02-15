@@ -74,7 +74,46 @@ def _inline_assets(html_content, html_path):
                 with open(img_path, "rb") as img_f:
                     data_url = "data:image/png;base64," + base64.b64encode(img_f.read()).decode("ascii")
                 content = content.replace('"images/host-icon.png"', '"' + data_url + '"')
+        # 승리 효과음 base64 인라인
+        if "sounds/win.mp3" in content:
+            sound_path = os.path.join(base_dir, "sounds", "win.mp3")
+            if os.path.isfile(sound_path):
+                with open(sound_path, "rb") as sound_f:
+                    data_url = "data:audio/mpeg;base64," + base64.b64encode(sound_f.read()).decode("ascii")
+                content = content.replace('"sounds/win.mp3"', '"' + data_url + '"')
+        # 타이머 BGM: sounds/bgm/ 폴더 스캔 후 인라인 + BGM_SOURCES 배열 주입
+        bgm_dir = os.path.join(base_dir, "sounds", "bgm")
+        bgm_files = sorted([f for f in os.listdir(bgm_dir) if f.endswith(".mp3")]) if os.path.isdir(bgm_dir) else []
+        if bgm_files and "__BGM_SOURCES_ARRAY__" in content:
+            array_str = "[" + ",".join('"sounds/bgm/' + f + '"' for f in bgm_files) + "]"
+            content = content.replace("__BGM_SOURCES_ARRAY__", array_str)
+        for name in bgm_files:
+            key = "sounds/bgm/" + name
+            if key in content:
+                sound_path = os.path.join(base_dir, "sounds", "bgm", name)
+                if os.path.isfile(sound_path):
+                    with open(sound_path, "rb") as sound_f:
+                        data_url = "data:audio/mpeg;base64," + base64.b64encode(sound_f.read()).decode("ascii")
+                    content = content.replace('"' + key + '"', '"' + data_url + '"')
+        # BGM 버튼 아이콘 base64 인라인
+        for name in ("bgm-on.png", "bgm-off.png"):
+            key = "images/" + name
+            if key in content:
+                img_path = os.path.join(base_dir, "images", name)
+                if os.path.isfile(img_path):
+                    with open(img_path, "rb") as img_f:
+                        data_url = "data:image/png;base64," + base64.b64encode(img_f.read()).decode("ascii")
+                    content = content.replace('"' + key + '"', '"' + data_url + '"')
         return "<script>\n" + content + "\n</script>"
+
+    def replace_img_src(html_text, rel_path, base_dir_inner):
+        """HTML 내 img src를 base64 데이터 URL로 치환."""
+        path = os.path.join(base_dir_inner, rel_path)
+        if not os.path.isfile(path):
+            return html_text
+        with open(path, "rb") as f:
+            data_url = "data:image/png;base64," + base64.b64encode(f.read()).decode("ascii")
+        return html_text.replace('src="' + rel_path + '"', 'src="' + data_url + '"')
 
     html_content = re.sub(
         r'<link\s+[^>]*rel=["\']stylesheet["\'][^>]*href=["\']([^"\']+)["\'][^>]*>',
@@ -88,6 +127,8 @@ def _inline_assets(html_content, html_path):
         html_content,
         flags=re.IGNORECASE,
     )
+    for img_name in ("bgm-on.png", "bgm-off.png"):
+        html_content = replace_img_src(html_content, "images/" + img_name, base_dir)
     return html_content
 
 
