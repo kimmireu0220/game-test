@@ -34,8 +34,9 @@ jobs:
 
       - name: GitHub Pages 빌드
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          # fromJSON(toJSON(secrets)) 사용 시 VS Code 확장의 "Context access might be invalid" 경고 회피
+          SUPABASE_URL: ${{ fromJSON(toJSON(secrets)).SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ fromJSON(toJSON(secrets)).SUPABASE_ANON_KEY }}
         run: |
           cd "$GITHUB_WORKSPACE"
           python game-automation/upload_games.py --github-pages
