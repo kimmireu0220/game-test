@@ -20,9 +20,21 @@ if _script_dir not in sys.path:
 
 import config  # noqa: F401 — .env 로드 (SUPABASE_URL, SUPABASE_ANON_KEY 등)
 import paths
-import wordpress_client
 
 MANIFEST_PATH = os.path.join(paths.GAMES_DIR, "manifest.json")
+
+
+def _inline_binary(content, base_dir, rel_path, mime_type):
+    """content 내에 '"rel_path"'가 있으면 해당 파일을 base64 데이터 URL로 치환한다."""
+    path = os.path.join(base_dir, rel_path)
+    if not os.path.isfile(path):
+        return content
+    key = '"' + rel_path + '"'
+    if key not in content:
+        return content
+    with open(path, "rb") as f:
+        data_url = "data:" + mime_type + ";base64," + base64.b64encode(f.read()).decode("ascii")
+    return content.replace(key, '"' + data_url + '"')
 
 
 def _inline_assets(html_content, html_path):
@@ -60,27 +72,15 @@ def _inline_assets(html_content, html_path):
         key = _js_escape(os.environ.get("SUPABASE_ANON_KEY", ""))
         content = content.replace("__SUPABASE_URL__", url)
         content = content.replace("__SUPABASE_ANON_KEY__", key)
-        # Win 배지 이미지를 base64로 인라인 (단일 HTML 업로드 시 이미지 로드 가능하도록)
-        if "images/win-badge.png" in content:
-            img_path = os.path.join(base_dir, "images", "win-badge.png")
-            if os.path.isfile(img_path):
-                with open(img_path, "rb") as img_f:
-                    data_url = "data:image/png;base64," + base64.b64encode(img_f.read()).decode("ascii")
-                content = content.replace('"images/win-badge.png"', '"' + data_url + '"')
-        # 방장 아이콘 이미지 base64 인라인
-        if "images/host-icon.png" in content:
-            img_path = os.path.join(base_dir, "images", "host-icon.png")
-            if os.path.isfile(img_path):
-                with open(img_path, "rb") as img_f:
-                    data_url = "data:image/png;base64," + base64.b64encode(img_f.read()).decode("ascii")
-                content = content.replace('"images/host-icon.png"', '"' + data_url + '"')
-        # 승리 효과음 base64 인라인
-        if "sounds/win.mp3" in content:
-            sound_path = os.path.join(base_dir, "sounds", "win.mp3")
-            if os.path.isfile(sound_path):
-                with open(sound_path, "rb") as sound_f:
-                    data_url = "data:audio/mpeg;base64," + base64.b64encode(sound_f.read()).decode("ascii")
-                content = content.replace('"sounds/win.mp3"', '"' + data_url + '"')
+        inline_assets_list = [
+            ("images/win-badge.png", "image/png"),
+            ("images/host-icon.png", "image/png"),
+            ("sounds/win.mp3", "audio/mpeg"),
+            ("images/bgm-on.png", "image/png"),
+            ("images/bgm-off.png", "image/png"),
+        ]
+        for rel_path, mime_type in inline_assets_list:
+            content = _inline_binary(content, base_dir, rel_path, mime_type)
         # 타이머 BGM: sounds/bgm/ 폴더 스캔 후 인라인 + BGM_SOURCES 배열 주입
         bgm_dir = os.path.join(base_dir, "sounds", "bgm")
         bgm_files = sorted([f for f in os.listdir(bgm_dir) if f.endswith(".mp3")]) if os.path.isdir(bgm_dir) else []
@@ -88,22 +88,7 @@ def _inline_assets(html_content, html_path):
             array_str = "[" + ",".join('"sounds/bgm/' + f + '"' for f in bgm_files) + "]"
             content = content.replace("__BGM_SOURCES_ARRAY__", array_str)
         for name in bgm_files:
-            key = "sounds/bgm/" + name
-            if key in content:
-                sound_path = os.path.join(base_dir, "sounds", "bgm", name)
-                if os.path.isfile(sound_path):
-                    with open(sound_path, "rb") as sound_f:
-                        data_url = "data:audio/mpeg;base64," + base64.b64encode(sound_f.read()).decode("ascii")
-                    content = content.replace('"' + key + '"', '"' + data_url + '"')
-        # BGM 버튼 아이콘 base64 인라인
-        for name in ("bgm-on.png", "bgm-off.png"):
-            key = "images/" + name
-            if key in content:
-                img_path = os.path.join(base_dir, "images", name)
-                if os.path.isfile(img_path):
-                    with open(img_path, "rb") as img_f:
-                        data_url = "data:image/png;base64," + base64.b64encode(img_f.read()).decode("ascii")
-                    content = content.replace('"' + key + '"', '"' + data_url + '"')
+            content = _inline_binary(content, base_dir, "sounds/bgm/" + name, "audio/mpeg")
         return "<script>\n" + content + "\n</script>"
 
     def replace_img_src(html_text, rel_path, base_dir_inner):
@@ -188,6 +173,8 @@ def build_to_dir(output_dir):
 
 def main():
     """manifest.json에 등록된 게임 HTML을 WordPress에 업로드한다."""
+    import wordpress_client  # 지연 import: --github-pages만 쓸 때 requests 불필요
+
     print("=" * 50)
     print("🎮 게임 업로드")
     print("=" * 50)

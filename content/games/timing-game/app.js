@@ -4,6 +4,12 @@
   var STORAGE_CLIENT_ID = "timing_game_client_id";
   var STORAGE_NICKNAME = "timing_game_nickname";
   var COUNTDOWN_SEC = 3;
+  var BEEP_FREQ_COUNTDOWN = 880;
+  var BEEP_FREQ_GO = 1320;
+  var BEEP_DURATION_MS = 120;
+  var BEEP_DURATION_GO_MS = 180;
+  var BGM_VOLUME = 0.3;
+  var PRESS_POLL_MS = 500;
   var BGM_SOURCES = (typeof __BGM_SOURCES_ARRAY__ !== "undefined" ? __BGM_SOURCES_ARRAY__ : ["sounds/bgm/timer-bgm.mp3", "sounds/bgm/timer-bgm2.mp3", "sounds/bgm/timer-bgm3.mp3", "sounds/bgm/timer-bgm4.mp3", "sounds/bgm/timer-bgm5.mp3", "sounds/bgm/timer-bgm6.mp3"]);
   var countdownAudioContext = null;
 
@@ -17,13 +23,13 @@
       var osc = ctx.createOscillator();
       var gain = ctx.createGain();
       osc.type = "sine";
-      osc.frequency.value = frequency || 880;
+      osc.frequency.value = frequency || BEEP_FREQ_COUNTDOWN;
       gain.gain.setValueAtTime(0.15, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + (durationMs || 150) / 1000);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + (durationMs || BEEP_DURATION_MS) / 1000);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + (durationMs || 150) / 1000);
+      osc.stop(ctx.currentTime + (durationMs || BEEP_DURATION_MS) / 1000);
     } catch (e) {}
   }
 
@@ -650,54 +656,121 @@
     countdownEl.textContent = "";
     if (countdownOverlayEl) countdownOverlayEl.classList.add("hidden");
 
+    function startRoundTimerPhase() {
+      var startReal = Date.now();
+      var liveTimerEl = document.getElementById("round-live-timer");
+      function hideLiveTimer() {
+        if (state.liveTimerInterval != null) {
+          clearInterval(state.liveTimerInterval);
+          state.liveTimerInterval = null;
+        }
+        if (state.timerBgmAudio) {
+          state.timerBgmAudio.pause();
+          state.timerBgmAudio = null;
+        }
+      }
+      state.liveTimerInterval = setInterval(function () {
+        var elapsed = (Date.now() - startReal) / 1000;
+        if (elapsed >= 3) {
+          if (state.liveTimerInterval != null) {
+            clearInterval(state.liveTimerInterval);
+            state.liveTimerInterval = null;
+          }
+          if (liveTimerEl) liveTimerEl.textContent = "??:??";
+          return;
+        }
+        var s = elapsed.toFixed(2);
+        var parts = s.split(".");
+        if (liveTimerEl) liveTimerEl.textContent = parts[0].padStart(2, "0") + ":" + (parts[1] || "00").slice(0, 2);
+      }, 50);
+      document.getElementById("btn-press").disabled = false;
+      try {
+        var bgmIdx = state.bgmRoundIndex % BGM_SOURCES.length;
+        state.bgmRoundIndex += 1;
+        state.timerBgmAudio = new Audio(BGM_SOURCES[bgmIdx]);
+        state.timerBgmAudio.loop = true;
+        state.timerBgmAudio.volume = BGM_VOLUME;
+        if (!state.bgmMuted) state.timerBgmAudio.play();
+      } catch (e) {}
+      if (state.roundPressesPollIntervalId != null) {
+        clearInterval(state.roundPressesPollIntervalId);
+        state.roundPressesPollIntervalId = null;
+      }
+      refreshRoundPressesDisplay();
+      state.roundPressesPollIntervalId = setInterval(refreshRoundPressesDisplay, PRESS_POLL_MS);
+      document.getElementById("btn-press").onclick = function () {
+        hideLiveTimer();
+        document.getElementById("btn-press").disabled = true;
+        document.getElementById("btn-press").onclick = null;
+        var sb = getSupabase();
+        if (sb && state.currentRound) {
+          sb.from("round_presses").insert({
+            round_id: state.currentRound.id,
+            client_id: state.clientId
+          }).then(function () {
+            refreshRoundPressesDisplay();
+          });
+        }
+        if (state.waitAllPressesIntervalId != null) {
+          clearInterval(state.waitAllPressesIntervalId);
+          state.waitAllPressesIntervalId = null;
+        }
+        var roundId = state.currentRound.id;
+        state.waitAllPressesIntervalId = setInterval(function () {
+          if (!sb || !state.currentRound || state.currentRound.id !== roundId) return;
+          sb.from("round_presses").select("client_id").eq("round_id", roundId).then(function (pressRes) {
+            sb.from("room_players").select("client_id").eq("room_id", state.roomId).then(function (playerRes) {
+              var pressCount = (pressRes.data || []).length;
+              var playerCount = (playerRes.data || []).length;
+              if (playerCount > 0 && pressCount >= playerCount) {
+                if (state.waitAllPressesIntervalId != null) {
+                  clearInterval(state.waitAllPressesIntervalId);
+                  state.waitAllPressesIntervalId = null;
+                }
+                showResult();
+              }
+            });
+          });
+        }, PRESS_POLL_MS);
+      };
+    }
+
     getServerTimeMs()
       .then(function (t) {
         var serverOffset = t.serverNowMs - t.clientNowMs;
         var delay = Math.max(0, startAt - t.serverNowMs);
+        var countdownSteps = [
+          { ms: 3000, num: 4 },
+          { ms: 2000, num: 3 },
+          { ms: 1000, num: 2 },
+          { ms: 0, num: 1 }
+        ];
         var countdownIntervalId = null;
         var lastCountdownNum = null;
         countdownIntervalId = setInterval(function () {
           var remaining = startAt - (Date.now() + serverOffset);
-          if (remaining > 3000) {
-            if (lastCountdownNum !== 4) {
-              lastCountdownNum = 4;
-              playCountdownBeep(880, 120);
+          var i;
+          for (i = 0; i < countdownSteps.length; i++) {
+            if (remaining > countdownSteps[i].ms) {
+              if (lastCountdownNum !== countdownSteps[i].num) {
+                lastCountdownNum = countdownSteps[i].num;
+                playCountdownBeep(BEEP_FREQ_COUNTDOWN, BEEP_DURATION_MS);
+              }
+              countdownEl.textContent = String(countdownSteps[i].num);
+              if (countdownOverlayEl) countdownOverlayEl.classList.remove("hidden");
+              return;
             }
-            countdownEl.textContent = "4";
-            if (countdownOverlayEl) countdownOverlayEl.classList.remove("hidden");
-          } else if (remaining > 2000) {
-            if (lastCountdownNum !== 3) {
-              lastCountdownNum = 3;
-              playCountdownBeep(880, 120);
-            }
-            countdownEl.textContent = "3";
-            if (countdownOverlayEl) countdownOverlayEl.classList.remove("hidden");
-          } else if (remaining > 1000) {
-            if (lastCountdownNum !== 2) {
-              lastCountdownNum = 2;
-              playCountdownBeep(880, 120);
-            }
-            countdownEl.textContent = "2";
-            if (countdownOverlayEl) countdownOverlayEl.classList.remove("hidden");
-          } else if (remaining > 0) {
-            if (lastCountdownNum !== 1) {
-              lastCountdownNum = 1;
-              playCountdownBeep(880, 120);
-            }
-            countdownEl.textContent = "1";
-            if (countdownOverlayEl) countdownOverlayEl.classList.remove("hidden");
-          } else {
-            if (lastCountdownNum !== 0) {
-              lastCountdownNum = 0;
-              playCountdownBeep(1320, 180);
-            }
-            if (countdownIntervalId != null) {
-              clearInterval(countdownIntervalId);
-              countdownIntervalId = null;
-            }
-            countdownEl.textContent = "";
-            if (countdownOverlayEl) countdownOverlayEl.classList.add("hidden");
           }
+          if (lastCountdownNum !== 0) {
+            lastCountdownNum = 0;
+            playCountdownBeep(BEEP_FREQ_GO, BEEP_DURATION_GO_MS);
+          }
+          if (countdownIntervalId != null) {
+            clearInterval(countdownIntervalId);
+            countdownIntervalId = null;
+          }
+          countdownEl.textContent = "";
+          if (countdownOverlayEl) countdownOverlayEl.classList.add("hidden");
         }, 50);
 
         setTimeout(function () {
@@ -707,165 +780,12 @@
           }
           countdownEl.textContent = "";
           if (countdownOverlayEl) countdownOverlayEl.classList.add("hidden");
-          var startReal = Date.now();
-          var liveTimerEl = document.getElementById("round-live-timer");
-          function hideLiveTimer() {
-            if (state.liveTimerInterval != null) {
-              clearInterval(state.liveTimerInterval);
-              state.liveTimerInterval = null;
-            }
-            if (state.timerBgmAudio) {
-              state.timerBgmAudio.pause();
-              state.timerBgmAudio = null;
-            }
-          }
-          state.liveTimerInterval = setInterval(function () {
-            var elapsed = (Date.now() - startReal) / 1000;
-            if (elapsed >= 3) {
-              if (state.liveTimerInterval != null) {
-                clearInterval(state.liveTimerInterval);
-                state.liveTimerInterval = null;
-              }
-              liveTimerEl.textContent = "??:??";
-              return;
-            }
-            var s = elapsed.toFixed(2);
-            var parts = s.split(".");
-            liveTimerEl.textContent = parts[0].padStart(2, "0") + ":" + (parts[1] || "00").slice(0, 2);
-          }, 50);
-          document.getElementById("btn-press").disabled = false;
-          try {
-            var bgmIdx = state.bgmRoundIndex % BGM_SOURCES.length;
-            state.bgmRoundIndex += 1;
-            state.timerBgmAudio = new Audio(BGM_SOURCES[bgmIdx]);
-            state.timerBgmAudio.loop = true;
-            state.timerBgmAudio.volume = 0.3;
-            if (!state.bgmMuted) state.timerBgmAudio.play();
-          } catch (e) {}
-          if (state.roundPressesPollIntervalId != null) {
-            clearInterval(state.roundPressesPollIntervalId);
-            state.roundPressesPollIntervalId = null;
-          }
-          refreshRoundPressesDisplay();
-          state.roundPressesPollIntervalId = setInterval(refreshRoundPressesDisplay, 500);
-          document.getElementById("btn-press").onclick = function () {
-            hideLiveTimer();
-            document.getElementById("btn-press").disabled = true;
-            document.getElementById("btn-press").onclick = null;
-            var sb = getSupabase();
-            if (sb && state.currentRound) {
-              sb.from("round_presses").insert({
-                round_id: state.currentRound.id,
-                client_id: state.clientId
-              }).then(function () {
-                refreshRoundPressesDisplay();
-              });
-            }
-            if (state.waitAllPressesIntervalId != null) {
-              clearInterval(state.waitAllPressesIntervalId);
-              state.waitAllPressesIntervalId = null;
-            }
-            var roundId = state.currentRound.id;
-            state.waitAllPressesIntervalId = setInterval(function () {
-              if (!sb || !state.currentRound || state.currentRound.id !== roundId) return;
-              sb.from("round_presses").select("client_id").eq("round_id", roundId).then(function (pressRes) {
-                sb.from("room_players").select("client_id").eq("room_id", state.roomId).then(function (playerRes) {
-                  var pressCount = (pressRes.data || []).length;
-                  var playerCount = (playerRes.data || []).length;
-                  if (playerCount > 0 && pressCount >= playerCount) {
-                    if (state.waitAllPressesIntervalId != null) {
-                      clearInterval(state.waitAllPressesIntervalId);
-                      state.waitAllPressesIntervalId = null;
-                    }
-                    showResult();
-                  }
-                });
-              });
-            }, 500);
-          };
+          startRoundTimerPhase();
         }, delay);
       })
       .catch(function () {
-        var now = Date.now();
-        var delay = Math.max(0, startAt - now);
-        setTimeout(function () {
-          var startReal = Date.now();
-          var liveTimerEl = document.getElementById("round-live-timer");
-          function hideLiveTimer() {
-            if (state.liveTimerInterval != null) {
-              clearInterval(state.liveTimerInterval);
-              state.liveTimerInterval = null;
-            }
-            if (state.timerBgmAudio) {
-              state.timerBgmAudio.pause();
-              state.timerBgmAudio = null;
-            }
-          }
-          state.liveTimerInterval = setInterval(function () {
-            var elapsed = (Date.now() - startReal) / 1000;
-            if (elapsed >= 3) {
-              if (state.liveTimerInterval != null) {
-                clearInterval(state.liveTimerInterval);
-                state.liveTimerInterval = null;
-              }
-              liveTimerEl.textContent = "??:??";
-              return;
-            }
-            var s = elapsed.toFixed(2);
-            var parts = s.split(".");
-            liveTimerEl.textContent = parts[0].padStart(2, "0") + ":" + (parts[1] || "00").slice(0, 2);
-          }, 50);
-          document.getElementById("btn-press").disabled = false;
-          try {
-            var bgmIdx = state.bgmRoundIndex % BGM_SOURCES.length;
-            state.bgmRoundIndex += 1;
-            state.timerBgmAudio = new Audio(BGM_SOURCES[bgmIdx]);
-            state.timerBgmAudio.loop = true;
-            state.timerBgmAudio.volume = 0.3;
-            if (!state.bgmMuted) state.timerBgmAudio.play();
-          } catch (e) {}
-          if (state.roundPressesPollIntervalId != null) {
-            clearInterval(state.roundPressesPollIntervalId);
-            state.roundPressesPollIntervalId = null;
-          }
-          refreshRoundPressesDisplay();
-          state.roundPressesPollIntervalId = setInterval(refreshRoundPressesDisplay, 500);
-          document.getElementById("btn-press").onclick = function () {
-            hideLiveTimer();
-            document.getElementById("btn-press").disabled = true;
-            document.getElementById("btn-press").onclick = null;
-            var sb = getSupabase();
-            if (sb && state.currentRound) {
-              sb.from("round_presses").insert({
-                round_id: state.currentRound.id,
-                client_id: state.clientId
-              }).then(function () {
-                refreshRoundPressesDisplay();
-              });
-            }
-            if (state.waitAllPressesIntervalId != null) {
-              clearInterval(state.waitAllPressesIntervalId);
-              state.waitAllPressesIntervalId = null;
-            }
-            var roundId = state.currentRound.id;
-            state.waitAllPressesIntervalId = setInterval(function () {
-              if (!sb || !state.currentRound || state.currentRound.id !== roundId) return;
-              sb.from("round_presses").select("client_id").eq("round_id", roundId).then(function (pressRes) {
-                sb.from("room_players").select("client_id").eq("room_id", state.roomId).then(function (playerRes) {
-                  var pressCount = (pressRes.data || []).length;
-                  var playerCount = (playerRes.data || []).length;
-                  if (playerCount > 0 && pressCount >= playerCount) {
-                    if (state.waitAllPressesIntervalId != null) {
-                      clearInterval(state.waitAllPressesIntervalId);
-                      state.waitAllPressesIntervalId = null;
-                    }
-                    showResult();
-                  }
-                });
-              });
-            }, 500);
-          };
-        }, delay);
+        var delay = Math.max(0, startAt - Date.now());
+        setTimeout(startRoundTimerPhase, delay);
       });
   }
 
