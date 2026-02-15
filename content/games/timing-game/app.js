@@ -622,7 +622,9 @@
 
     var startAt = new Date(round.start_at).getTime();
     var countdownEl = document.getElementById("round-countdown");
+    var countdownOverlayEl = document.getElementById("round-countdown-overlay");
     countdownEl.textContent = "";
+    if (countdownOverlayEl) countdownOverlayEl.classList.add("hidden");
 
     getServerTimeMs()
       .then(function (t) {
@@ -638,24 +640,28 @@
               playCountdownBeep(880, 120);
             }
             countdownEl.textContent = "4";
+            if (countdownOverlayEl) countdownOverlayEl.classList.remove("hidden");
           } else if (remaining > 2000) {
             if (lastCountdownNum !== 3) {
               lastCountdownNum = 3;
               playCountdownBeep(880, 120);
             }
             countdownEl.textContent = "3";
+            if (countdownOverlayEl) countdownOverlayEl.classList.remove("hidden");
           } else if (remaining > 1000) {
             if (lastCountdownNum !== 2) {
               lastCountdownNum = 2;
               playCountdownBeep(880, 120);
             }
             countdownEl.textContent = "2";
+            if (countdownOverlayEl) countdownOverlayEl.classList.remove("hidden");
           } else if (remaining > 0) {
             if (lastCountdownNum !== 1) {
               lastCountdownNum = 1;
               playCountdownBeep(880, 120);
             }
             countdownEl.textContent = "1";
+            if (countdownOverlayEl) countdownOverlayEl.classList.remove("hidden");
           } else {
             if (lastCountdownNum !== 0) {
               lastCountdownNum = 0;
@@ -666,6 +672,7 @@
               countdownIntervalId = null;
             }
             countdownEl.textContent = "";
+            if (countdownOverlayEl) countdownOverlayEl.classList.add("hidden");
           }
         }, 50);
 
@@ -675,6 +682,7 @@
             countdownIntervalId = null;
           }
           countdownEl.textContent = "";
+          if (countdownOverlayEl) countdownOverlayEl.classList.add("hidden");
           var startReal = Date.now();
           var liveTimerEl = document.getElementById("round-live-timer");
           function hideLiveTimer() {
