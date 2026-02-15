@@ -15,3 +15,13 @@
 ```
 
 단일 HTML만 쓸 경우: `{ "file": "mygame.html", "title": "내 게임", "slug": "my-game" }`
+
+## 게임 소개 포스트 (post-config.json)
+
+블로그에 올리는 **게임 소개 포스트**의 제목·요약·플레이 방법은 각 게임 폴더 하위 `post-config.json`에서 관리합니다.  
+예: `2048/post-config.json`, `timing-game/post-config.json`.  
+`post_title`, `summary`, `steps`(문자열 배열)를 넣으면 `publish_game_posts.py` 실행 시 해당 내용으로 포스트가 발행됩니다.
+
+포스트 본문에 들어가는 **스크린샷**은 같은 게임 폴더 하위 `screenshots/`에 둡니다.  
+예: `2048/screenshots/01-start.png`, `02-play.png`.  
+번호 순서대로 `post-config.json`의 `steps`와 매칭되며, `publish_game_posts.py`가 이 경로의 이미지를 미디어로 업로드해 포스트에 넣습니다.

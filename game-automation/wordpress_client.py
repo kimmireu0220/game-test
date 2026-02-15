@@ -204,6 +204,81 @@ def delete_media_by_url_endswith(suffix):
     return False
 
 
+def get_page_link_by_slug(slug):
+    """slug에 해당하는 페이지의 공개 URL을 반환. 없으면 None."""
+    auth = _auth()
+    base = f"{config.WP_URL}/wp-json/wp/v2/pages"
+    page = _find_page_by_slug(auth, base, slug)
+    if page:
+        return page.get("link")
+    return None
+
+
+def upload_media(data, filename, mime_type):
+    """이미지/미디어를 업로드. 성공 시 (source_url, media_id) 튜플, 실패 시 (None, None)."""
+    url = f"{config.WP_URL}/wp-json/wp/v2/media"
+    auth = _auth()
+    files = {"file": (filename, data, mime_type)}
+    try:
+        r = requests.post(url, auth=auth, files=files, timeout=30)
+        if r.status_code in (200, 201):
+            d = r.json()
+            return (d.get("source_url") or d.get("link"), d.get("id"))
+        print(f"⚠️ 미디어 업로드 실패: {r.status_code} {r.text[:150]}")
+        return (None, None)
+    except (requests.RequestException, ValueError, KeyError) as e:  # pylint: disable=broad-exception-caught
+        print(f"⚠️ 미디어 업로드 오류: {e}")
+        return (None, None)
+
+
+def get_or_create_category(name, slug=None):
+    """카테고리 이름으로 조회. 없으면 생성 후 ID 반환. 실패 시 None."""
+    if slug is None:
+        slug = name
+    auth = _auth()
+    url = f"{config.WP_URL}/wp-json/wp/v2/categories"
+    r = requests.get(url, auth=auth, params={"slug": slug, "per_page": 1}, timeout=10)
+    if r.status_code == 200:
+        data = r.json()
+        if isinstance(data, list) and data:
+            return data[0].get("id")
+    r = requests.post(
+        url,
+        auth=auth,
+        json={"name": name, "slug": slug},
+        timeout=10,
+    )
+    if r.status_code in (200, 201):
+        return r.json().get("id")
+    return None
+
+
+def create_post(title, content, status="publish", featured_media=None, categories=None):
+    """포스트를 생성. 성공 시 포스트 URL, 실패 시 None.
+    categories: 카테고리 ID 리스트(예: [2]). 비우면 Uncategorized.
+    """
+    url = f"{config.WP_URL}/wp-json/wp/v2/posts"
+    auth = _auth()
+    post_data = {
+        "title": title,
+        "content": content,
+        "status": status,
+    }
+    if featured_media is not None:
+        post_data["featured_media"] = featured_media
+    if categories is not None:
+        post_data["categories"] = categories
+    try:
+        r = requests.post(url, auth=auth, json=post_data, timeout=30)
+        if r.status_code in (200, 201):
+            return r.json().get("link")
+        print(f"⚠️ 포스트 생성 실패: {r.status_code} {r.text[:200]}")
+        return None
+    except (requests.RequestException, ValueError, KeyError) as e:  # pylint: disable=broad-exception-caught
+        print(f"⚠️ 포스트 생성 오류: {e}")
+        return None
+
+
 def upload_game_html(slug, html_bytes, filename=None):
     """게임 HTML을 미디어로 업로드하고 접근 URL을 반환한다.
     반환된 URL을 iframe src로 쓰면 모든 브라우저에서 스크립트가 정상 실행된다.
