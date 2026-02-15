@@ -4,6 +4,28 @@
   var STORAGE_CLIENT_ID = "timing_game_client_id";
   var STORAGE_NICKNAME = "timing_game_nickname";
   var COUNTDOWN_SEC = 3;
+  var countdownAudioContext = null;
+
+  function playCountdownBeep(frequency, durationMs) {
+    try {
+      if (!countdownAudioContext) {
+        countdownAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      var ctx = countdownAudioContext;
+      if (ctx.state === "suspended") ctx.resume();
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = frequency || 880;
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + (durationMs || 150) / 1000);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + (durationMs || 150) / 1000);
+    } catch (e) {}
+  }
+
   function getConfig() {
     return window.TIMING_GAME_CONFIG || {};
   }
@@ -607,17 +629,38 @@
         var serverOffset = t.serverNowMs - t.clientNowMs;
         var delay = Math.max(0, startAt - t.serverNowMs);
         var countdownIntervalId = null;
+        var lastCountdownNum = null;
         countdownIntervalId = setInterval(function () {
           var remaining = startAt - (Date.now() + serverOffset);
           if (remaining > 3000) {
+            if (lastCountdownNum !== 4) {
+              lastCountdownNum = 4;
+              playCountdownBeep(880, 120);
+            }
             countdownEl.textContent = "4";
           } else if (remaining > 2000) {
+            if (lastCountdownNum !== 3) {
+              lastCountdownNum = 3;
+              playCountdownBeep(880, 120);
+            }
             countdownEl.textContent = "3";
           } else if (remaining > 1000) {
+            if (lastCountdownNum !== 2) {
+              lastCountdownNum = 2;
+              playCountdownBeep(880, 120);
+            }
             countdownEl.textContent = "2";
           } else if (remaining > 0) {
+            if (lastCountdownNum !== 1) {
+              lastCountdownNum = 1;
+              playCountdownBeep(880, 120);
+            }
             countdownEl.textContent = "1";
           } else {
+            if (lastCountdownNum !== 0) {
+              lastCountdownNum = 0;
+              playCountdownBeep(1320, 180);
+            }
             if (countdownIntervalId != null) {
               clearInterval(countdownIntervalId);
               countdownIntervalId = null;
