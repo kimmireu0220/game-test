@@ -353,7 +353,15 @@
       })
       .subscribe(function (status, err) {
         if (status === "SUBSCRIBED") {
-          btnStart.disabled = !state.isHost;
+          if (state.startButtonDelayFromPlayAgain) {
+            btnStart.disabled = true;
+            setTimeout(function () {
+              state.startButtonDelayFromPlayAgain = false;
+              btnStart.disabled = !state.isHost;
+            }, 1000);
+          } else {
+            btnStart.disabled = !state.isHost;
+          }
         } else if (status === "CHANNEL_ERROR") {
           btnStart.disabled = false;
         }
@@ -859,7 +867,7 @@
         });
     }
 
-    setTimeout(pollResult, 1200);
+    setTimeout(pollResult, 2000);
   }
 
   function showRoundEnd() {
@@ -877,6 +885,7 @@
     if (btnPress) btnPress.classList.add("hidden");
     if (againBtn) {
       againBtn.onclick = function () {
+        state.startButtonDelayFromPlayAgain = true;
         if (actionsWrap) actionsWrap.classList.add("hidden");
         if (document.getElementById("round-gameplay-wrap")) {
           document.getElementById("round-gameplay-wrap").classList.remove("hidden");
