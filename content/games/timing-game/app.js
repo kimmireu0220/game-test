@@ -10,7 +10,6 @@
   var generateRoomCode = TimingGame.generateRoomCode;
   var cleanupSubscriptions = TimingGame.cleanupSubscriptions;
 
-  var COUNTDOWN_SEC = 3;
   var BEEP_FREQ_COUNTDOWN = 880;
   var BEEP_FREQ_GO = 1320;
   var BEEP_DURATION_MS = 120;
@@ -679,7 +678,6 @@
             }
           });
         });
-        }
       }, PRESS_POLL_MS);
     };
   }
