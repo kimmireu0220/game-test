@@ -112,6 +112,23 @@
         location.reload();
       };
     }
+    function unlockAudioOnce() {
+      if (state.audioUnlocked) return;
+      state.audioUnlocked = true;
+      try {
+        if (!countdownAudioContext) {
+          countdownAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (countdownAudioContext.state === "suspended") {
+          countdownAudioContext.resume();
+        }
+      } catch (e) {}
+    }
+    var wrapper = document.querySelector(".game-page-wrapper");
+    if (wrapper) {
+      wrapper.addEventListener("click", unlockAudioOnce, { once: true, capture: true });
+      wrapper.addEventListener("touchstart", unlockAudioOnce, { once: true, capture: true });
+    }
     var btnBgm = document.getElementById("btn-bgm-toggle");
     var btnBgmIcon = document.getElementById("btn-bgm-icon");
     if (btnBgm && btnBgmIcon) {
@@ -638,19 +655,23 @@
       }, 50);
       document.getElementById("btn-press").disabled = false;
       try {
-        var bgmIdx = (state.currentRound && state.currentRound.id != null)
-          ? hashStringToIndex(String(state.currentRound.id), BGM_SOURCES.length)
-          : (state.bgmRoundIndex % BGM_SOURCES.length);
-        state.bgmRoundIndex += 1;
-        var src = BGM_SOURCES[bgmIdx];
-        if (src) {
+        if (BGM_SOURCES.length > 0) {
+          var bgmIdx = (state.currentRound && state.currentRound.id != null)
+            ? hashStringToIndex(String(state.currentRound.id), BGM_SOURCES.length)
+            : (state.bgmRoundIndex % BGM_SOURCES.length);
+          state.bgmRoundIndex += 1;
+          var src = BGM_SOURCES[bgmIdx];
+          if (src) {
           state.timerBgmAudio = new Audio(src);
           state.timerBgmAudio.loop = true;
           state.timerBgmAudio.volume = BGM_VOLUME;
           if (!state.bgmMuted) {
             var p = state.timerBgmAudio.play();
-            if (p && typeof p.catch === "function") p.catch(function () {});
+            if (p && typeof p.then === "function") {
+              p.then(function () { state.bgmPlayPending = false; }).catch(function () { state.bgmPlayPending = true; });
+            }
           }
+        }
         }
       } catch (e) {}
       if (state.roundPressesPollIntervalId != null) {
@@ -660,6 +681,10 @@
       refreshRoundPressesDisplay();
       state.roundPressesPollIntervalId = setInterval(refreshRoundPressesDisplay, PRESS_POLL_MS);
       document.getElementById("btn-press").onclick = function () {
+        if (state.timerBgmAudio && !state.bgmMuted) {
+          state.timerBgmAudio.play().catch(function () {});
+          state.bgmPlayPending = false;
+        }
         hideLiveTimer();
         document.getElementById("btn-press").disabled = true;
         document.getElementById("btn-press").onclick = null;
