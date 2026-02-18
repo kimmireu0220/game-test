@@ -268,7 +268,7 @@ if __name__ == "__main__":
         print(f"✅ {num_built}개 빌드 완료")
         print("Repo → Settings → Pages → Source: Deploy from branch → main → /docs")
         print(
-            "게임 URL 예: https://<username>.github.io/game-test/games/2048-game.html"
+            "게임 URL 예: https://<username>.github.io/game-test/games/timing-game.html"
         )
         print("=" * 50)
         sys.exit(0 if num_built else 1)

@@ -30,7 +30,7 @@ MANIFEST_PATH = os.path.join(paths.GAMES_DIR, "manifest.json")
 
 
 def _game_dir_from_file(file_path):
-    """manifest의 file(예: '2048/index.html')에서 게임 디렉터리명 반환."""
+    """manifest의 file(예: 'timing-game/index.html')에서 게임 디렉터리명 반환."""
     return file_path.split("/")[0] if file_path else ""
 
 

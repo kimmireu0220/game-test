@@ -74,7 +74,6 @@ def run_import_check():
         import paths  # noqa: F401  # pylint: disable=unused-import
         import wordpress_client  # noqa: F401  # pylint: disable=unused-import
 
-        __import__("e2e.checks.check_2048")
     except (ModuleNotFoundError, ImportError, AttributeError) as e:
         print(f"   ❌ import 실패: {e}")
         print("   → venv 활성화 후 실행하거나 pip install -r requirements.txt")

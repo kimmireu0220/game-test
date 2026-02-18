@@ -22,5 +22,4 @@ python blog-deploy/upload_games.py --github-pages
 
 ## 게임 URL
 
-- `https://<username>.github.io/game-test/games/2048-game.html`
 - `https://<username>.github.io/game-test/games/timing-game.html`

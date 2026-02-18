@@ -14,9 +14,7 @@ if _BLOG_DEPLOY not in sys.path:
     sys.path.insert(0, _BLOG_DEPLOY)
 
 # 등록된 체크 모듈의 main() 실행
-CHECKS = [
-    ("2048 게임", "e2e.checks.check_2048"),
-]
+CHECKS = []
 
 
 def main():

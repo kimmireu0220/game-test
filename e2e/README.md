@@ -17,12 +17,6 @@ WordPress에 올린 게임·페이지를 Playwright로 열어 동작을 확인�
 .venv/bin/python e2e/run_all.py
 ```
 
-**2048만 확인**:
-
-```bash
-.venv/bin/python e2e/checks/check_2048.py
-```
-
 스크린샷은 `e2e/screenshots/`에 저장됩니다.
 
 ## 체크 추가

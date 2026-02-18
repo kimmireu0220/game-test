@@ -38,7 +38,7 @@
 
     <div id="screen-join" class="screen hidden">
       <label for="input-join-code">방 코드</label>
-      <input type="text" id="input-join-code" maxlength="6" placeholder="6자리 코드">
+      <input type="text" id="input-join-code" maxlength="6" placeholder="6자리 코드" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code">
       <div class="button-row">
         <button type="button" id="btn-join-submit">입장</button>
         <button type="button" id="btn-back-from-join">뒤로</button>

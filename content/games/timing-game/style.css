@@ -243,6 +243,13 @@
   margin-bottom: 4px;
   text-align: center;
 }
+.game-page-wrapper .round-player-zone .round-zone-rank .round-zone-rank-medal {
+  width: 36px;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+}
 /* 1~3등: 금·은·동 메달 색 */
 .game-page-wrapper .round-player-zone .round-zone-rank.rank-1 { color: #ffd700; }
 .game-page-wrapper .round-player-zone .round-zone-rank.rank-2 { color: #c0c0c0; }
