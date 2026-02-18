@@ -2,6 +2,7 @@
 WordPress REST API: 연결 확인, 페이지 게시/업데이트
 """
 
+import html as html_module
 import requests
 from requests.auth import HTTPBasicAuth
 
@@ -253,6 +254,43 @@ def get_or_create_category(name, slug=None):
     return None
 
 
+def _list_posts_in_category(auth, category_id, per_page=100):
+    """카테고리에 속한 포스트 목록 반환."""
+    url = f"{config.WP_URL}/wp-json/wp/v2/posts"
+    r = requests.get(
+        url,
+        auth=auth,
+        params={"categories": category_id, "per_page": per_page, "status": "publish"},
+        timeout=10,
+    )
+    if r.status_code != 200:
+        return []
+    data = r.json()
+    return data if isinstance(data, list) else []
+
+
+def _normalize_title(t):
+    """제목 비교용: HTML 엔티티 디코드 후 공백 정규화."""
+    if t is None:
+        return ""
+    s = t if isinstance(t, str) else (t.get("rendered") or t.get("raw") or "")
+    return html_module.unescape(s).strip()
+
+
+def find_post_by_title_and_category(title, category_id):
+    """제목·카테고리가 일치하는 포스트를 찾아 반환. 없으면 None."""
+    if category_id is None:
+        return None
+    auth = _auth()
+    posts = _list_posts_in_category(auth, category_id)
+    want = _normalize_title(title)
+    for p in posts:
+        pt = p.get("title")
+        if _normalize_title(pt) == want:
+            return p
+    return None
+
+
 def create_post(title, content, status="publish", featured_media=None, categories=None):
     """포스트를 생성. 성공 시 포스트 URL, 실패 시 None.
     categories: 카테고리 ID 리스트(예: [2]). 비우면 Uncategorized.
@@ -276,6 +314,28 @@ def create_post(title, content, status="publish", featured_media=None, categorie
         return None
     except (requests.RequestException, ValueError, KeyError) as e:  # pylint: disable=broad-exception-caught
         print(f"⚠️ 포스트 생성 오류: {e}")
+        return None
+
+
+def update_post(
+    post_id, title, content, featured_media=None, categories=None
+):
+    """기존 포스트를 수정. 성공 시 포스트 URL, 실패 시 None."""
+    url = f"{config.WP_URL}/wp-json/wp/v2/posts/{post_id}"
+    auth = _auth()
+    post_data = {"title": title, "content": content}
+    if featured_media is not None:
+        post_data["featured_media"] = featured_media
+    if categories is not None:
+        post_data["categories"] = categories
+    try:
+        r = requests.post(url, auth=auth, json=post_data, timeout=30)
+        if r.status_code == 200:
+            return r.json().get("link")
+        print(f"⚠️ 포스트 수정 실패: {r.status_code} {r.text[:200]}")
+        return None
+    except (requests.RequestException, ValueError, KeyError) as e:  # pylint: disable=broad-exception-caught
+        print(f"⚠️ 포스트 수정 오류: {e}")
         return None
 
 

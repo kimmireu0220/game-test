@@ -18,9 +18,15 @@
   top: 28px;
   right: 28px;
   z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
+.game-page-wrapper #btn-refresh,
 .game-page-wrapper #btn-bgm-toggle {
-  padding: 8px;
+  width: 48px;
+  height: 48px;
+  padding: 0;
   background: rgba(255, 255, 255, 0.15);
   color: #eee;
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -29,13 +35,18 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
 }
+.game-page-wrapper #btn-refresh:hover,
+.game-page-wrapper #btn-bgm-toggle:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+.game-page-wrapper #btn-refresh img.btn-refresh-icon,
 .game-page-wrapper #btn-bgm-toggle img {
   width: 32px;
   height: 32px;
   display: block;
 }
-.game-page-wrapper #btn-bgm-toggle:hover { background: rgba(255, 255, 255, 0.25); }
 .game-page-wrapper #btn-bgm-toggle.muted { opacity: 0.6; }
 .game-page-wrapper .screen { display: flex; flex-direction: column; align-items: center; gap: 24px; max-width: 360px; width: 100%; }
 .game-page-wrapper .screen.hidden { display: none; }
@@ -221,6 +232,13 @@
   border-color: #7fc8a8;
   border-width: 2px;
   background: rgba(127, 200, 168, 0.18);
+}
+.game-page-wrapper .round-player-zone .round-zone-rank {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f5d033;
+  margin-bottom: 4px;
+  text-align: center;
 }
 .game-page-wrapper .round-player-zone .round-zone-name {
   display: flex; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: 600; margin-bottom: 6px;

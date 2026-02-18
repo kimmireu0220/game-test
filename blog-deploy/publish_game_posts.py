@@ -1,7 +1,7 @@
 """
 게임 소개 포스트를 WordPress에 발행합니다.
-각 게임 폴더 하위 screenshots/*.png(예: content/games/2048/screenshots/01-start.png)를 미디어로 업로드한 뒤
-포스트 본문(요약 + 플레이 방법 + CTA)에 넣어 포스트를 생성합니다.
+기존 포스트(같은 제목·카테고리)가 있으면 내용만 업데이트하고, 없으면 새로 생성합니다.
+각 게임 폴더 하위 screenshots/*.png를 미디어로 업로드한 뒤 포스트 본문(요약 + 플레이 방법 + CTA)에 넣습니다.
 
 실행 (프로젝트 루트에서):
   python blog-deploy/publish_game_posts.py
@@ -86,7 +86,7 @@ def _build_post_content(summary, image_urls_with_captions, game_url):
 def _publish_one(
     slug, title_from_manifest, post_config, category_id=None, game_dir=None
 ):
-    """한 게임에 대한 소개 포스트를 발행한다. 성공 시 True."""
+    """한 게임에 대한 소개 포스트를 발행한다. 기존 포스트가 있으면 내용만 업데이트. 성공 시 True."""
     post_title = post_config.get("post_title") or (title_from_manifest + " 소개")
     summary = post_config.get("summary") or ""
     steps = post_config.get("steps") or []
@@ -112,10 +112,24 @@ def _publish_one(
         game_url = config.WP_URL.rstrip("/") + "/" + slug + "/"
 
     content = _build_post_content(summary, image_urls_with_captions, game_url)
-    kwargs = {"status": "publish", "featured_media": first_media_id}
-    if category_id is not None:
-        kwargs["categories"] = [category_id]
-    post_url = wordpress_client.create_post(post_title, content, **kwargs)
+    categories = [category_id] if category_id is not None else None
+
+    existing = wordpress_client.find_post_by_title_and_category(post_title, category_id)
+    if existing:
+        post_id = existing.get("id")
+        post_url = wordpress_client.update_post(
+            post_id, post_title, content,
+            featured_media=first_media_id, categories=categories
+        )
+        if post_url:
+            print(f"   포스트 업데이트: {post_url}")
+            return True
+        return False
+
+    post_url = wordpress_client.create_post(
+        post_title, content,
+        status="publish", featured_media=first_media_id, categories=categories
+    )
     if post_url:
         print(f"   포스트 발행: {post_url}")
         return True

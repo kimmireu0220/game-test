@@ -129,7 +129,7 @@ def _inline_assets(html_content, html_path):
         html_content,
         flags=re.IGNORECASE,
     )
-    for img_name in ("bgm-on.png", "bgm-off.png"):
+    for img_name in ("bgm-on.png", "bgm-off.png", "reload.png"):
         html_content = replace_img_src(html_content, "images/" + img_name, base_dir)
     return html_content
 

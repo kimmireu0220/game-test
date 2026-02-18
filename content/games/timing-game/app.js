@@ -134,6 +134,12 @@
     document.getElementById("input-nickname").onchange = function () {
       setNickname(this.value.trim());
     };
+    var btnRefresh = document.getElementById("btn-refresh");
+    if (btnRefresh) {
+      btnRefresh.onclick = function () {
+        location.reload();
+      };
+    }
     var btnBgm = document.getElementById("btn-bgm-toggle");
     var btnBgmIcon = document.getElementById("btn-bgm-icon");
     if (btnBgm && btnBgmIcon) {
@@ -858,6 +864,7 @@
               }
               state.winCounts = newWinCounts;
               state.lastRoundWinnerId = (winner && winner.offsetMs != null) ? winner.client_id : null;
+              state.roundResultOrder = list;
               var roundPlayers = (playerRes.data || []).map(function (p) {
                 return { client_id: p.client_id, nickname: players[p.client_id] || p.client_id };
               });
@@ -902,9 +909,16 @@
         leaveRoom();
       };
     }
-    // 게임 기록(몇 초에 누른지)은 그대로 두고, 승 수만 갱신 + 이번 라운드 승자 위에 Win! 표시
+    function rankLabel(n) {
+      var s = n % 10, t = n % 100;
+      if (s === 1 && t !== 11) return n + "st";
+      if (s === 2 && t !== 12) return n + "nd";
+      if (s === 3 && t !== 13) return n + "rd";
+      return n + "th";
+    }
     var winCounts = state.winCounts || {};
     var winnerId = state.lastRoundWinnerId || null;
+    var resultOrder = state.roundResultOrder || [];
     if (winnerId && state.clientId === winnerId) {
       try {
         var winAudio = new Audio("sounds/win.mp3");
@@ -915,6 +929,19 @@
       var cid = zone.dataset.clientId;
       var winsEl = zone.querySelector(".round-zone-wins");
       if (winsEl && cid) winsEl.textContent = "Win: " + (winCounts[cid] || 0);
+      var rankIdx = resultOrder.findIndex(function (x) { return x.client_id === cid; });
+      var rankEl = zone.querySelector(".round-zone-rank");
+      if (rankIdx >= 0) {
+        if (!rankEl) {
+          rankEl = document.createElement("div");
+          rankEl.className = "round-zone-rank";
+          zone.insertBefore(rankEl, zone.firstChild);
+        }
+        rankEl.textContent = rankLabel(rankIdx + 1);
+        rankEl.style.display = "";
+      } else if (rankEl) {
+        rankEl.style.display = "none";
+      }
       var slot = zone.parentElement;
       if (!slot || !slot.classList.contains("round-player-slot")) return;
       var badge = slot.querySelector(".round-zone-win-badge");
