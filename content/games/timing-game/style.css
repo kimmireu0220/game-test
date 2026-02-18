@@ -169,6 +169,15 @@
 }
 .game-page-wrapper .round-live-timer.hidden { display: none; }
 .game-page-wrapper #screen-round { gap: 0; }
+.game-page-wrapper .round-result-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  margin: 0 0 16px 0;
+  width: 100%;
+}
+.game-page-wrapper .round-result-title.hidden { display: none; }
 .game-page-wrapper .round-player-zones {
   display: grid;
   gap: 6px;

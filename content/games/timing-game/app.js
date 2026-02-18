@@ -608,6 +608,8 @@
     if (gameplayWrap) gameplayWrap.classList.remove("hidden");
     if (actionsWrap) actionsWrap.classList.add("hidden");
     if (btnPress) btnPress.classList.remove("hidden");
+    var resultTitleEl = document.getElementById("round-result-title");
+    if (resultTitleEl) resultTitleEl.classList.add("hidden");
     var liveTimerEl = document.getElementById("round-live-timer");
     if (liveTimerEl) liveTimerEl.textContent = "00:00";
     showScreen("screen-round");
@@ -864,6 +866,8 @@
     var leaveBtn = document.getElementById("btn-round-leave");
     if (gameplayWrap) gameplayWrap.classList.add("hidden");
     if (actionsWrap) actionsWrap.classList.remove("hidden");
+    var resultTitleEl = document.getElementById("round-result-title");
+    if (resultTitleEl) resultTitleEl.classList.remove("hidden");
     var btnPress = document.getElementById("btn-press");
     if (btnPress) btnPress.classList.add("hidden");
     if (againBtn) {
