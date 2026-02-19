@@ -61,28 +61,24 @@
       return;
     }
 
-    if (getNickname()) {
-      document.getElementById("input-nickname").value = getNickname();
-    }
+    state.nickname = getNickname();
+    var displayText = document.getElementById("nickname-display-text");
+    if (displayText) displayText.textContent = state.nickname || "";
 
     document.getElementById("btn-create-room").onclick = function () {
-      var nick = document.getElementById("input-nickname").value.trim();
-      if (!nick) {
-        alert("닉네임을 입력한 뒤 진행하세요.");
+      if (!state.nickname) {
+        alert("닉네임을 먼저 홈 화면에서 설정해 주세요.");
         return;
       }
-      state.nickname = nick;
-      setNickname(nick);
+      setNickname(state.nickname);
       showScreen("screen-create");
     };
     document.getElementById("btn-join-room").onclick = function () {
-      var nick = document.getElementById("input-nickname").value.trim();
-      if (!nick) {
-        alert("닉네임을 입력한 뒤 진행하세요.");
+      if (!state.nickname) {
+        alert("닉네임을 먼저 홈 화면에서 설정해 주세요.");
         return;
       }
-      state.nickname = nick;
-      setNickname(nick);
+      setNickname(state.nickname);
       var params = new URLSearchParams(window.location.search);
       var code = params.get("code") || "";
       document.getElementById("input-join-code").value = code;
@@ -102,15 +98,6 @@
     };
     document.getElementById("btn-start-round").onclick = startRound;
     document.getElementById("btn-leave-room").onclick = leaveRoom;
-    document.getElementById("input-nickname").onchange = function () {
-      setNickname(this.value.trim());
-    };
-    var btnRefresh = document.getElementById("btn-refresh");
-    if (btnRefresh) {
-      btnRefresh.onclick = function () {
-        location.reload();
-      };
-    }
     function unlockAudioOnce() {
       if (state.audioUnlocked) return;
       state.audioUnlocked = true;
@@ -128,17 +115,9 @@
       wrapper.addEventListener("click", unlockAudioOnce, { once: true, capture: true });
       wrapper.addEventListener("touchstart", unlockAudioOnce, { once: true, capture: true });
     }
-    var btnBgm = document.getElementById("btn-bgm-toggle");
-    var btnBgmIcon = document.getElementById("btn-bgm-icon");
-    if (btnBgm && btnBgmIcon) {
-      function updateBgmButton() {
-        btnBgmIcon.src = state.bgmMuted ? "images/bgm-off.png" : "images/bgm-on.png";
-        btnBgm.classList.toggle("muted", state.bgmMuted);
-      }
-      updateBgmButton();
-      btnBgm.onclick = function () {
-        state.bgmMuted = !state.bgmMuted;
-        updateBgmButton();
+    window.addEventListener("message", function (e) {
+      if (e.data && e.data.type === "setBgmMuted") {
+        state.bgmMuted = e.data.value;
         if (state.timerBgmAudio) {
           if (state.bgmMuted) state.timerBgmAudio.pause();
           else {
@@ -146,18 +125,16 @@
             if (playPromise && typeof playPromise.catch === "function") playPromise.catch(function () {});
           }
         }
-      };
-    }
+      }
+    });
   }
 
   function createRoom() {
-    var nick = document.getElementById("input-nickname").value.trim();
-    if (!nick) {
-      alert("닉네임을 입력하세요.");
+    if (!state.nickname) {
+      alert("닉네임을 먼저 홈 화면에서 설정해 주세요.");
       return;
     }
-    state.nickname = nick;
-    setNickname(nick);
+    setNickname(state.nickname);
     var name = document.getElementById("input-room-name").value.trim() || "대기실";
     var sb = getSupabase();
     if (!sb) return;
@@ -202,13 +179,11 @@
   }
 
   function joinRoom() {
-    var nick = document.getElementById("input-nickname").value.trim();
-    if (!nick) {
-      alert("닉네임을 입력하세요.");
+    if (!state.nickname) {
+      alert("닉네임을 먼저 홈 화면에서 설정해 주세요.");
       return;
     }
-    state.nickname = nick;
-    setNickname(nick);
+    setNickname(state.nickname);
     var code = document.getElementById("input-join-code").value.trim().replace(/\D/g, "").slice(0, 6);
     if (code.length !== 6) {
       alert("6자리 방 코드를 입력하세요.");
