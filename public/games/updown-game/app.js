@@ -649,7 +649,9 @@
     if (totalSeconds == null || isNaN(totalSeconds)) return "—";
     var min = Math.floor(totalSeconds / 60);
     var sec = (totalSeconds % 60).toFixed(2);
-    return (min + "").padStart(2, "0") + ":" + (parseFloat(sec) < 10 ? "0" + sec : sec);
+    var secStr = parseFloat(sec) < 10 ? "0" + sec : sec;
+    if (min === 0) return secStr;
+    return (min + "").padStart(2, "0") + ":" + secStr;
   }
 
   function applyDurationsToResultZones(resultOrder, roundStartTime) {
