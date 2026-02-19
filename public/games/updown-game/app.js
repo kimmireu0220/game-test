@@ -297,6 +297,7 @@
           }
           state.currentRound = { id: data.round_id, min: 1, max: 100 };
           state.winnerClientId = null;
+          state.roundDurationSeconds = null;
           loadRoundPlayersAndShowGame();
         }
       })
@@ -333,6 +334,7 @@
     }
     state.currentRound = { id: roundId, min: 1, max: 100 };
     state.winnerClientId = null;
+    state.roundDurationSeconds = null;
     showScreen("screen-round");
     document.getElementById("round-gameplay").classList.remove("hidden");
     document.getElementById("round-result-wrap").classList.add("hidden");
@@ -344,6 +346,11 @@
         .on("postgres_changes", { event: "UPDATE", schema: "public", table: "updown_rounds", filter: "id=eq." + roundId }, function (payload) {
           if (payload.new && payload.new.status === "finished") {
             state.winnerClientId = payload.new.winner_client_id;
+            if (payload.new.winner_at && payload.new.created_at) {
+              state.roundDurationSeconds = (new Date(payload.new.winner_at).getTime() - new Date(payload.new.created_at).getTime()) / 1000;
+            } else {
+              state.roundDurationSeconds = null;
+            }
             showRoundResult();
           }
         })
@@ -373,6 +380,11 @@
         .on("postgres_changes", { event: "UPDATE", schema: "public", table: "updown_rounds", filter: "id=eq." + roundId }, function (payload) {
           if (payload.new && payload.new.status === "finished") {
             state.winnerClientId = payload.new.winner_client_id;
+            if (payload.new.winner_at && payload.new.created_at) {
+              state.roundDurationSeconds = (new Date(payload.new.winner_at).getTime() - new Date(payload.new.created_at).getTime()) / 1000;
+            } else {
+              state.roundDurationSeconds = null;
+            }
             showRoundResult();
           }
         })
@@ -409,12 +421,8 @@
     document.getElementById("round-gameplay").classList.add("hidden");
     document.getElementById("round-result-wrap").classList.remove("hidden");
     var msgEl = document.getElementById("round-winner-msg");
-    if (state.winnerClientId === state.clientId) {
-      msgEl.textContent = "당신이 승리!";
-    } else {
-      var winner = (state.roundPlayers || []).find(function (p) { return p.client_id === state.winnerClientId; });
-      msgEl.textContent = (winner ? winner.nickname : "상대") + " 승리!";
-    }
+    msgEl.textContent = "";
+    msgEl.classList.add("hidden");
     var players = state.roundPlayers || [];
     var winnerPlayer = players.find(function (p) { return p.client_id === state.winnerClientId; });
     var others = players.filter(function (p) { return p.client_id !== state.winnerClientId; });
@@ -423,23 +431,40 @@
     if (resultZones && resultOrder.length) {
       resultZones.innerHTML = "";
       resultZones.className = "round-player-zones count-" + Math.min(resultOrder.length, 8);
-      resultOrder.forEach(function (p) {
+      resultOrder.forEach(function (p, i) {
+        var slot = document.createElement("div");
+        slot.className = "round-player-slot";
         var zone = document.createElement("div");
         zone.className = "round-player-zone" + (p.client_id === state.clientId ? " me" : "");
         zone.dataset.clientId = p.client_id;
+        var num = i + 1;
+        var pNumSpan = document.createElement("span");
+        pNumSpan.className = "round-zone-p-num num-" + num;
+        pNumSpan.textContent = "P" + num;
+        zone.appendChild(pNumSpan);
         var nameEl = document.createElement("div");
         nameEl.className = "round-zone-name";
-        nameEl.textContent = p.nickname;
+        var nameLine = document.createElement("div");
+        nameLine.className = "round-zone-name-line";
+        nameLine.appendChild(document.createTextNode(p.nickname));
+        nameEl.appendChild(nameLine);
+        var winsSpan = document.createElement("span");
+        winsSpan.className = "round-zone-wins";
+        nameEl.appendChild(winsSpan);
         zone.appendChild(nameEl);
-        var winsEl = document.createElement("div");
-        winsEl.className = "round-zone-wins";
-        zone.appendChild(winsEl);
-        resultZones.appendChild(zone);
+        if (p.client_id === state.winnerClientId && state.roundDurationSeconds != null) {
+          var durationEl = document.createElement("div");
+          durationEl.className = "round-zone-duration";
+          durationEl.textContent = state.roundDurationSeconds.toFixed(1) + "초";
+          zone.appendChild(durationEl);
+        }
+        slot.appendChild(zone);
+        resultZones.appendChild(slot);
       });
       if (typeof GameRankDisplay !== "undefined" && GameRankDisplay.applyRanks) {
         GameRankDisplay.applyRanks(resultZones, resultOrder, {
           getWinCount: function (cid) { return (state.winCounts || {})[cid] || 0; },
-          winsFormat: "plain"
+          winsFormat: "paren"
         });
       }
     }

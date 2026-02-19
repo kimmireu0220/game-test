@@ -1,7 +1,80 @@
 /**
- * 공용 순위 표시 스타일 (1·2·3등 강조, 4등부터 일반)
- * 타이머·업다운 게임 동일 적용
+ * 공용 순위 표시: 배치·스타일 통일 (타이머·업다운 결과 화면 동일)
+ * .round-player-slot 사용 시에만 적용 (업다운 게임 중에는 slot 없음)
  */
+.game-page-wrapper .round-player-zones {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  margin-bottom: 0;
+  min-height: 0;
+}
+.game-page-wrapper .round-player-zones.count-1 { grid-template-columns: 1fr; grid-template-rows: auto; min-height: 0; }
+.game-page-wrapper .round-player-zones.count-2 { grid-template-columns: 1fr 1fr; grid-template-rows: auto; min-height: 0; }
+.game-page-wrapper .round-player-zones.count-3 {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  min-height: 200px;
+}
+.game-page-wrapper .round-player-zones.count-4 {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  min-height: 320px;
+}
+.game-page-wrapper .round-player-zones.count-5,
+.game-page-wrapper .round-player-zones.count-6 {
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  min-height: 280px;
+}
+.game-page-wrapper .round-player-zones.count-7,
+.game-page-wrapper .round-player-zones.count-8 {
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  min-height: 240px;
+}
+.game-page-wrapper .round-player-slot {
+  position: relative;
+  min-height: 0;
+}
+.game-page-wrapper .round-player-slot .round-player-zone {
+  position: relative;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 18px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 120px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.game-page-wrapper .round-player-slot .round-player-zone.me {
+  border-color: #7fc8a8;
+  border-width: 2px;
+  background: rgba(127, 200, 168, 0.18);
+}
+.game-page-wrapper .round-player-slot .round-player-zone .round-zone-p-num {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5em;
+  height: 1.5em;
+  padding: 0;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 0.8rem;
+  margin: 0;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
 .game-page-wrapper .round-player-zone .round-zone-rank {
   display: block;
   font-size: 1rem;
@@ -9,11 +82,31 @@
   margin-bottom: 6px;
   text-align: center;
 }
-.game-page-wrapper .round-player-zone .round-zone-rank.rank-1 { color: #ffd700; }
-.game-page-wrapper .round-player-zone .round-zone-rank.rank-2 { color: #c0c0c0; }
-.game-page-wrapper .round-player-zone .round-zone-rank.rank-3 { color: #b87333; }
+.game-page-wrapper .round-player-zone .round-zone-rank.rank-1 { color: #ffd700 !important; }
+.game-page-wrapper .round-player-zone .round-zone-rank.rank-2 { color: #c0c0c0 !important; }
+.game-page-wrapper .round-player-zone .round-zone-rank.rank-3 { color: #b87333 !important; }
 .game-page-wrapper .round-player-zone .round-zone-rank.rank-4,
 .game-page-wrapper .round-player-zone .round-zone-rank.rank-5,
 .game-page-wrapper .round-player-zone .round-zone-rank.rank-6,
 .game-page-wrapper .round-player-zone .round-zone-rank.rank-7,
-.game-page-wrapper .round-player-zone .round-zone-rank.rank-8 { color: rgba(255, 255, 255, 0.85); }
+.game-page-wrapper .round-player-zone .round-zone-rank.rank-8 { color: rgba(255, 255, 255, 0.85) !important; }
+.game-page-wrapper .round-player-slot .round-player-zone .round-zone-name {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.game-page-wrapper .round-player-slot .round-player-zone .round-zone-name-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.game-page-wrapper .round-player-slot .round-player-zone .round-zone-wins {
+  display: block;
+  font-size: 0.95rem;
+  color: #7fc8a8;
+  margin-top: 2px;
+}

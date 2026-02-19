@@ -62,6 +62,7 @@
     winCounts: {},
     winnerClientId: null,
     winnerNickname: null,
+    roundDurationSeconds: null,
     roundPlayers: null
   };
 

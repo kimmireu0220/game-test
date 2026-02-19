@@ -172,6 +172,13 @@
   margin-top: 10px;
   font-weight: 500;
 }
+.game-page-wrapper .round-player-slot .round-player-zone .round-zone-duration {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #7fc8a8;
+  margin-top: 8px;
+  font-variant-numeric: tabular-nums;
+}
 .game-page-wrapper .round-input-row {
   display: flex;
   flex-direction: column;
@@ -212,5 +219,6 @@
 .game-page-wrapper .round-result-wrap.hidden { display: none; }
 .game-page-wrapper .round-result-title { font-size: 1.25rem; margin-bottom: 12px; }
 .game-page-wrapper .round-winner-msg { font-size: 1.2rem; font-weight: 600; color: #7fc8a8; margin-bottom: 24px; }
+.game-page-wrapper .round-winner-msg.hidden { display: none; }
 .game-page-wrapper #round-gameplay.hidden { display: none; }
 .game-page-wrapper #round-end-actions { margin-top: 16px; }

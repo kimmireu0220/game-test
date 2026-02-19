@@ -81,7 +81,11 @@ Deno.serve(async (req) => {
     if (g === secret) {
       const { error: updateError } = await supabase
         .from("updown_rounds")
-        .update({ status: "finished", winner_client_id: client_id })
+        .update({
+          status: "finished",
+          winner_client_id: client_id,
+          winner_at: new Date().toISOString(),
+        })
         .eq("id", round_id);
 
       if (updateError) {

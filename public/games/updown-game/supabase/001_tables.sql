@@ -33,6 +33,7 @@ create table if not exists public.updown_rounds (
   secret_number int not null check (secret_number >= 1 and secret_number <= 100),
   status text not null default 'playing' check (status in ('playing', 'finished')),
   winner_client_id text,
+  winner_at timestamptz,
   created_at timestamptz not null default now()
 );
 
