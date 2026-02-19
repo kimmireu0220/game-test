@@ -1,11 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-
-export interface GameEntry {
-  file: string;
-  title: string;
-  slug: string;
-}
+import { GameCard, type GameEntry } from "./GameCard";
 
 interface HomeProps {
   nickname: string;
@@ -37,53 +31,9 @@ export function Home({ nickname, onNicknameChange }: HomeProps) {
       </div>
       <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", padding: "2rem" }}>
         <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "1rem", width: "100%", maxWidth: "400px" }}>
-          {games.map((g) => {
-            const base = import.meta.env.BASE_URL;
-            const cardIcon =
-              g.slug === "timing-game"
-                ? `${base}games/timing-game/images/timing-game-icon.png`
-                : g.slug === "updown-game"
-                  ? `${base}games/updown-game/images/updown-game-icon.png`
-                  : null;
-            return (
-              <li key={g.slug}>
-                <Link
-                  to={`/games/${g.slug}/`}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "1rem",
-                    padding: "1.25rem 1.5rem",
-                    fontSize: "1.25rem",
-                    fontWeight: 500,
-                    color: "#eee",
-                    textDecoration: "none",
-                    background: "rgba(255,255,255,0.08)",
-                    border: "1px solid rgba(255,255,255,0.2)",
-                    borderRadius: "12px",
-                    transition: "background 0.2s, border-color 0.2s",
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.background = "rgba(255,255,255,0.14)";
-                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.35)";
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.background = "rgba(255,255,255,0.08)";
-                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)";
-                  }}
-                >
-                  {cardIcon && (
-                    <img
-                      src={cardIcon}
-                      alt=""
-                      style={{ width: "48px", height: "48px", objectFit: "contain", flexShrink: 0 }}
-                    />
-                  )}
-                  <span>{g.title}</span>
-                </Link>
-              </li>
-            );
-          })}
+          {games.map((g) => (
+            <GameCard key={g.slug} game={g} />
+          ))}
         </ul>
       </div>
     </main>

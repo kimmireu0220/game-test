@@ -1,0 +1,41 @@
+---
+description: React 컴포넌트 구조·규칙 (미니게임 모음집)
+globs: src/**/*.tsx
+alwaysApply: true
+
+---
+
+# 컴포넌트 규칙
+
+## 구조
+
+- **컴포넌트**: `src/components/` 아래 한 파일에 한 컴포넌트(또는 밀접한 역할 하나).
+- **공용 로직/상태**: `src/lib/` (예: `nickname.ts` — localStorage 키·getter).
+
+## 네이밍·내보내기
+
+- 컴포넌트는 **named export** (`export function HomeGate`).
+- 해당 컴포넌트가 쓰는 **타입/인터페이스**는 같은 파일에서 정의하고 필요 시 export (예: `GameCard`의 `GameEntry`).
+- 다른 컴포넌트에서 타입만 쓸 때는 `import { GameCard, type GameEntry } from "./GameCard"` 처럼 `type` import.
+
+## 역할 분리
+
+- **App**: 라우트만 정의. 화면 로직은 컴포넌트에 위임.
+- **HomeGate**: 닉네임 유무에 따른 첫 화면 분기만 담당.
+- **NicknameScreen**: 첫 접속 시 닉네임 입력 폼.
+- **Home**: 게임 목록 fetch + 레이아웃(헤더, 닉네임 버튼, 목록 영역).
+- **GameCard**: 목록의 카드 하나(Link, 아이콘, 제목, 호버). 아이콘 URL은 slug 기반으로 컴포넌트 내부에서 결정.
+- **GamePage**: URL `slug` 받아서 iframe 경로만 만들어 **GameLayout**에 전달.
+- **GameLayout**: iframe + 새로고침 버튼 + BGM 토글. 게임 공통 레이아웃.
+
+## 새 컴포넌트 추가 시
+
+- 한 파일에 하나의 책임(화면/블록/카드 단위).
+- 재사용되거나 목록에서 반복되는 UI는 별도 컴포넌트로 분리(예: `GameCard`).
+- 공용 상수·유틸은 `src/lib/`에 두고 컴포넌트는 가져다만 사용.
+
+## 게임 쪽(iframe 내부)
+
+- `public/games/<게임명>/` 은 HTML+JS+CSS. React 컴포넌트 아님.
+- 공통 UI는 **동일 클래스·마크업**으로 통일 (예: `.screen-form-label`, `.screen-field`, `.button-row`).
+- 공용 이미지: `public/games/images/`. 게임 전용: `public/games/<게임명>/images/`.
