@@ -80,7 +80,7 @@
     var rangeMsg = document.createElement("p");
     rangeMsg.id = "round-range-msg";
     rangeMsg.className = "round-range-msg";
-    rangeMsg.innerHTML = "<span style=\"color:#f87171\">↑ <span id=\"round-range-min\">1</span></span> &nbsp; <span style=\"color:#60a5fa\">↓ <span id=\"round-range-max\">1</span></span>";
+    rangeMsg.innerHTML = "<span style=\"color:#f87171\">↑ <span id=\"round-range-min\">1</span></span> &nbsp; <span style=\"color:#60a5fa\">↓ <span id=\"round-range-max\">50</span></span>";
     gameplay.appendChild(rangeMsg);
     var liveZones = document.createElement("div");
     liveZones.id = "round-live-zones";
@@ -92,7 +92,7 @@
     inputGuess.type = "number";
     inputGuess.id = "input-guess";
     inputGuess.min = "1";
-    inputGuess.max = "1";
+    inputGuess.max = "50";
     inputGuess.placeholder = "숫자";
     inputGuess.setAttribute("inputmode", "numeric");
     var btnSubmit = document.createElement("button");
@@ -434,7 +434,7 @@
             clearInterval(state.lobbyRoundPollIntervalId);
             state.lobbyRoundPollIntervalId = null;
           }
-          state.currentRound = { id: data.round_id, min: 1, max: 1, created_at: data.created_at || null, start_at: data.start_at || null };
+          state.currentRound = { id: data.round_id, min: 1, max: 50, created_at: data.created_at || null, start_at: data.start_at || null };
           state.winnerClientId = null;
           state.roundDurationSeconds = null;
           state.roundCreatedAt = data.created_at || null;
@@ -473,7 +473,7 @@
       clearInterval(state.lobbyRoundPollIntervalId);
       state.lobbyRoundPollIntervalId = null;
     }
-    state.currentRound = { id: roundId, min: 1, max: 1, created_at: roundPayload.created_at || null, start_at: roundPayload.start_at || null };
+    state.currentRound = { id: roundId, min: 1, max: 50, created_at: roundPayload.created_at || null, start_at: roundPayload.start_at || null };
     state.winnerClientId = null;
     state.roundDurationSeconds = null;
     state.roundCreatedAt = roundPayload.created_at || null;
@@ -586,7 +586,7 @@
     /* 먼저 round 화면(범위·플레이어·입력·제출)을 보여준 뒤, 그 위에 3-2-1 카운트다운 */
     function showRoundContent() {
       var min = state.currentRound ? state.currentRound.min : 1;
-      var max = state.currentRound ? state.currentRound.max : 1;
+      var max = state.currentRound ? state.currentRound.max : 50;
       document.getElementById("round-range-min").textContent = min;
       document.getElementById("round-range-max").textContent = max;
       document.getElementById("input-guess").min = min;
@@ -817,7 +817,7 @@
     if (!input || !btn || btn.disabled) return;
     var guess = parseInt(input.value, 10);
     var min = state.currentRound ? state.currentRound.min : 1;
-    var max = state.currentRound ? state.currentRound.max : 1;
+    var max = state.currentRound ? state.currentRound.max : 50;
     if (isNaN(guess) || guess < min || guess > max) {
       feedback.textContent = min + " ~ " + max + " 사이 숫자를 입력하세요.";
       feedback.classList.remove("hidden", "up", "down", "correct");
