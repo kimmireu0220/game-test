@@ -18,7 +18,7 @@
   flex-direction: column;
   align-items: center;
   gap: 28px;
-  max-width: 400px;
+  max-width: 440px;
   width: 100%;
 }
 .game-page-wrapper .screen.hidden { display: none; }
@@ -135,10 +135,6 @@
   color: #8dd4b4;
   letter-spacing: 0.02em;
   margin-bottom: 8px;
-  padding: 14px 20px;
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 .game-page-wrapper .round-player-zones {
   display: grid;
@@ -181,11 +177,14 @@
   flex-direction: column;
   gap: 12px;
   width: 100%;
+  max-width: 100%;
   align-items: stretch;
   margin-top: 8px;
 }
 .game-page-wrapper .round-input-row input {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   padding: 14px 18px;
   font-size: 1.05rem;
   border-radius: 12px;

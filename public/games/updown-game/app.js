@@ -415,6 +415,34 @@
       var winner = (state.roundPlayers || []).find(function (p) { return p.client_id === state.winnerClientId; });
       msgEl.textContent = (winner ? winner.nickname : "상대") + " 승리!";
     }
+    var players = state.roundPlayers || [];
+    var winnerPlayer = players.find(function (p) { return p.client_id === state.winnerClientId; });
+    var others = players.filter(function (p) { return p.client_id !== state.winnerClientId; });
+    var resultOrder = winnerPlayer ? [winnerPlayer].concat(others) : players;
+    var resultZones = document.getElementById("round-result-player-zones");
+    if (resultZones && resultOrder.length) {
+      resultZones.innerHTML = "";
+      resultZones.className = "round-player-zones count-" + Math.min(resultOrder.length, 8);
+      resultOrder.forEach(function (p) {
+        var zone = document.createElement("div");
+        zone.className = "round-player-zone" + (p.client_id === state.clientId ? " me" : "");
+        zone.dataset.clientId = p.client_id;
+        var nameEl = document.createElement("div");
+        nameEl.className = "round-zone-name";
+        nameEl.textContent = p.nickname;
+        zone.appendChild(nameEl);
+        var winsEl = document.createElement("div");
+        winsEl.className = "round-zone-wins";
+        zone.appendChild(winsEl);
+        resultZones.appendChild(zone);
+      });
+      if (typeof GameRankDisplay !== "undefined" && GameRankDisplay.applyRanks) {
+        GameRankDisplay.applyRanks(resultZones, resultOrder, {
+          getWinCount: function (cid) { return (state.winCounts || {})[cid] || 0; },
+          winsFormat: "plain"
+        });
+      }
+    }
     document.querySelectorAll(".host-only").forEach(function (el) {
       el.classList.toggle("hidden", !state.isHost);
     });

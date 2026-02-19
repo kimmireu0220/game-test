@@ -832,34 +832,14 @@
   }
 
   function applyRoundEndRanks() {
-    function rankLabel(n) {
-      var s = n % 10, t = n % 100;
-      if (s === 1 && t !== 11) return n + "st";
-      if (s === 2 && t !== 12) return n + "nd";
-      if (s === 3 && t !== 13) return n + "rd";
-      return n + "th";
-    }
-    var winCounts = state.winCounts || {};
+    var container = document.getElementById("round-player-zones");
     var resultOrder = state.roundResultOrder || [];
-    document.querySelectorAll(".round-player-zone[data-client-id]").forEach(function (zone) {
-      var cid = zone.dataset.clientId;
-      var winsEl = zone.querySelector(".round-zone-wins");
-      if (winsEl && cid) winsEl.textContent = "( " + (winCounts[cid] || 0) + "승 )";
-      var rankIdx = resultOrder.findIndex(function (x) { return x.client_id === cid; });
-      var rankEl = zone.querySelector(".round-zone-rank");
-      if (rankIdx >= 0) {
-        var rankNum = rankIdx + 1;
-        if (!rankEl) {
-          rankEl = document.createElement("div");
-          zone.insertBefore(rankEl, zone.firstChild);
-        }
-        rankEl.className = "round-zone-rank rank-" + rankNum;
-        rankEl.textContent = rankLabel(rankNum);
-        rankEl.style.display = "";
-      } else if (rankEl) {
-        rankEl.style.display = "none";
-      }
-    });
+    if (typeof GameRankDisplay !== "undefined" && GameRankDisplay.applyRanks) {
+      GameRankDisplay.applyRanks(container, resultOrder, {
+        getWinCount: function (cid) { return (state.winCounts || {})[cid] || 0; },
+        winsFormat: "paren"
+      });
+    }
   }
 
   function showRoundEnd() {

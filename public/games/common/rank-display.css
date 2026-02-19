@@ -1,0 +1,19 @@
+/**
+ * 공용 순위 표시 스타일 (1·2·3등 강조, 4등부터 일반)
+ * 타이머·업다운 게임 동일 적용
+ */
+.game-page-wrapper .round-player-zone .round-zone-rank {
+  display: block;
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  text-align: center;
+}
+.game-page-wrapper .round-player-zone .round-zone-rank.rank-1 { color: #ffd700; }
+.game-page-wrapper .round-player-zone .round-zone-rank.rank-2 { color: #c0c0c0; }
+.game-page-wrapper .round-player-zone .round-zone-rank.rank-3 { color: #b87333; }
+.game-page-wrapper .round-player-zone .round-zone-rank.rank-4,
+.game-page-wrapper .round-player-zone .round-zone-rank.rank-5,
+.game-page-wrapper .round-player-zone .round-zone-rank.rank-6,
+.game-page-wrapper .round-player-zone .round-zone-rank.rank-7,
+.game-page-wrapper .round-player-zone .round-zone-rank.rank-8 { color: rgba(255, 255, 255, 0.85); }
