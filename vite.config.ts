@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
+import liveReload from "vite-plugin-live-reload";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
@@ -14,6 +15,8 @@ export default defineConfig(({ mode }) => {
     base,
     plugins: [
       react(),
+      // public/games 아래 HTML·CSS·JS 수정 시 브라우저 자동 새로고침
+      liveReload("public/games/**/*.{html,css,js}"),
       // dev: /games/*/config.example.js 요청 시 .env로 치환. build: dist/games/*/config.example.js 치환.
       {
         name: "game-config-inject",
