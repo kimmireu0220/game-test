@@ -16,7 +16,7 @@
   var BEEP_DURATION_GO_MS = 180;
   var BGM_VOLUME = 0.3;
   var PRESS_POLL_MS = 500;
-  var BGM_SOURCES = (typeof __BGM_SOURCES_ARRAY__ !== "undefined" ? __BGM_SOURCES_ARRAY__ : ["sounds/bgm/timer-1.mp3", "sounds/bgm/timer-2.mp3", "sounds/bgm/timer-3.mp3", "sounds/bgm/timer-4.mp3", "sounds/bgm/timer-5.mp3", "sounds/bgm/timer-6.mp3"]);
+  var BGM_SOURCES = (typeof __BGM_SOURCES_ARRAY__ !== "undefined" ? __BGM_SOURCES_ARRAY__ : ["../common/sounds/bgm/game-bgm-1.mp3", "../common/sounds/bgm/game-bgm-2.mp3", "../common/sounds/bgm/game-bgm-3.mp3", "../common/sounds/bgm/game-bgm-4.mp3", "../common/sounds/bgm/game-bgm-5.mp3", "../common/sounds/bgm/game-bgm-6.mp3"]);
   var countdownAudioContext = null;
 
   function hashStringToIndex(str, max) {
@@ -991,7 +991,7 @@
     var winnerId = state.lastRoundWinnerId || null;
     if (winnerId && state.clientId === winnerId) {
       try {
-        var winAudio = new Audio("sounds/win.mp3");
+        var winAudio = new Audio("../common/sounds/win.mp3");
         winAudio.play();
       } catch (e) {}
     }

@@ -50,6 +50,8 @@
     clientId: getClientId(),
     nickname: getNickname(),
     bgmMuted: false,
+    roundBgmAudio: null,
+    bgmRoundIndex: 0,
     roomId: null,
     roomCode: null,
     roomName: null,

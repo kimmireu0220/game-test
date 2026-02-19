@@ -10,6 +10,43 @@
   var generateRoomCode = UpdownGame.generateRoomCode;
   var cleanupSubscriptions = UpdownGame.cleanupSubscriptions;
 
+  var BGM_SOURCES = ["../common/sounds/bgm/game-bgm-1.mp3", "../common/sounds/bgm/game-bgm-2.mp3", "../common/sounds/bgm/game-bgm-3.mp3", "../common/sounds/bgm/game-bgm-4.mp3", "../common/sounds/bgm/game-bgm-5.mp3", "../common/sounds/bgm/game-bgm-6.mp3"];
+  var BGM_VOLUME = 0.3;
+
+  function hashStringToIndex(str, max) {
+    var h = 0;
+    for (var i = 0; i < str.length; i++) h = ((h << 5) - h) + str.charCodeAt(i) | 0;
+    return Math.abs(h) % max;
+  }
+
+  function startRoundBgm() {
+    if (state.roundBgmAudio) {
+      state.roundBgmAudio.pause();
+      state.roundBgmAudio = null;
+    }
+    if (!BGM_SOURCES.length) return;
+    try {
+      var bgmIdx = (state.currentRound && state.currentRound.id != null)
+        ? hashStringToIndex(String(state.currentRound.id), BGM_SOURCES.length)
+        : (state.bgmRoundIndex % BGM_SOURCES.length);
+      state.bgmRoundIndex += 1;
+      var src = BGM_SOURCES[bgmIdx];
+      if (src) {
+        state.roundBgmAudio = new Audio(src);
+        state.roundBgmAudio.loop = true;
+        state.roundBgmAudio.volume = BGM_VOLUME;
+        if (!state.bgmMuted) state.roundBgmAudio.play().catch(function () {});
+      }
+    } catch (e) {}
+  }
+
+  function stopRoundBgm() {
+    if (state.roundBgmAudio) {
+      state.roundBgmAudio.pause();
+      state.roundBgmAudio = null;
+    }
+  }
+
   function showScreen(id) {
     document.querySelectorAll(".game-page-wrapper .screen").forEach(function (el) {
       el.classList.add("hidden");
@@ -46,6 +83,7 @@
     btnSubmit.type = "button";
     btnSubmit.id = "btn-submit-guess";
     btnSubmit.textContent = "제출";
+    btnSubmit.onclick = submitGuess;
     inputRow.appendChild(inputGuess);
     inputRow.appendChild(btnSubmit);
     gameplay.appendChild(inputRow);
@@ -96,7 +134,7 @@
     document.getElementById("btn-back-from-join").onclick = function () { showScreen("screen-nickname"); };
     document.getElementById("btn-start-round").onclick = startRound;
     document.getElementById("btn-leave-room").onclick = leaveRoom;
-    document.getElementById("btn-submit-guess").onclick = submitGuess;
+    /* btn-submit-guess는 라운드 진입 시 ensureUpdownRoundDOM()에서 생성·바인딩 */
     document.getElementById("btn-round-play-again").onclick = function () {
       var resultSection = document.getElementById("round-result-section");
       var slot = document.getElementById("round-gameplay-slot");
@@ -113,6 +151,10 @@
       btnBgm.onclick = function () {
         state.bgmMuted = !state.bgmMuted;
         updateBgmButton();
+        if (state.roundBgmAudio) {
+          if (state.bgmMuted) state.roundBgmAudio.pause();
+          else state.roundBgmAudio.play().catch(function () {});
+        }
         try {
           if (window.parent && window.parent !== window) {
             window.parent.postMessage({ type: "setBgmMuted", value: state.bgmMuted }, "*");
@@ -136,6 +178,10 @@
       if (e.data && e.data.type === "setBgmMuted") {
         state.bgmMuted = e.data.value;
         updateBgmButton();
+        if (state.roundBgmAudio) {
+          if (state.bgmMuted) state.roundBgmAudio.pause();
+          else state.roundBgmAudio.play().catch(function () {});
+        }
       }
     });
     updateBgmButton();
@@ -448,6 +494,7 @@
     var resultSection = document.getElementById("round-result-section");
     if (slot) slot.classList.remove("hidden");
     if (resultSection) resultSection.classList.add("hidden");
+    startRoundBgm();
     var min = state.currentRound ? state.currentRound.min : 1;
     var max = state.currentRound ? state.currentRound.max : 1; /* 임시: 1~1 */
     document.getElementById("round-range-min").textContent = min;
@@ -507,6 +554,7 @@
   }
 
   function showRoundResult() {
+    stopRoundBgm();
     var slot = document.getElementById("round-gameplay-slot");
     var resultSection = document.getElementById("round-result-section");
     if (slot) slot.classList.add("hidden");
@@ -559,6 +607,12 @@
     document.querySelectorAll(".host-only").forEach(function (el) {
       el.classList.toggle("hidden", !state.isHost);
     });
+    if (state.winnerClientId && state.clientId === state.winnerClientId) {
+      try {
+        var winAudio = new Audio("../common/sounds/win.mp3");
+        winAudio.play();
+      } catch (e) {}
+    }
     if (state.unsubscribeRound) state.unsubscribeRound();
   }
 
