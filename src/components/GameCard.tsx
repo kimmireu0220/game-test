@@ -26,7 +26,7 @@ function getGameDescription(slug: string): string {
     return "현재 있는 게임 중 하나를 랜덤으로 플레이합니다.";
   }
   if (slug === "temp-game") return "임시 게임\n(추가 예정)";
-  if (slug === "temp-game-2") return "임시 게임 2\n(추가 예정)";
+  if (slug === "temp-game-2") return "1부터 16까지 순서대로 빠르게 터치\n소요 시간 짧은 사람이 1등";
   return "";
 }
 

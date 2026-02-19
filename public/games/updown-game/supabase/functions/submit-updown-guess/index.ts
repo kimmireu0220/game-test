@@ -1,6 +1,11 @@
 // Supabase Edge Function: submit-updown-guess
 // 숫자 제출 처리. 서버만 secret_number를 보므로 여기서 판정.
+/// <reference path="./deno.d.ts" />
 
+declare const Deno: {
+  serve: (handler: (req: Request) => Promise<Response>) => void;
+  env: { get: (key: string) => string | undefined };
+};
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {

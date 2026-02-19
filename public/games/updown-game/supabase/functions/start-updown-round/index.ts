@@ -2,6 +2,11 @@
 // 호스트만 호출. updown_rounds에 secret_number(1~50 랜덤) 생성,
 // 해당 방 참가자 전원에 대해 updown_round_player_ranges에 min=1, max=50 삽입.
 
+declare const Deno: {
+  serve: (handler: (req: Request) => Promise<Response>) => void;
+  env: { get: (key: string) => string | undefined };
+};
+// @ts-expect-error Deno URL import; runs on Supabase Edge
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
