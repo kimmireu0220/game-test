@@ -1,0 +1,61 @@
+---
+description: 이 프로젝트에 연결된 MCP 서버 사용 규칙
+alwaysApply: true
+---
+
+# 프로젝트 연결 MCP 사용 규칙
+
+이 프로젝트에는 아래 MCP 서버가 연결되어 있다. 작업 유형에 맞게 우선 활용한다.
+
+---
+
+## 1. Supabase (project-0-mini-game-supabase)
+
+**용도**: 백엔드 DB·Edge Function 운영·배포
+
+- **SQL 실행**: `execute_sql` — 테이블 데이터 조회/삭제, 마이그레이션 스크립트 실행 등. `project_id`는 `list_projects`로 확인한 뒤 사용.
+- **Edge Function 배포**: `deploy_edge_function` — `public/games/*/supabase/functions/` 아래 함수 배포 시 사용. 인자: `project_id`, `name`, `entrypoint_path`, `verify_jwt`, `files`(배열, 각 항목 `name`+`content`).
+- **프로젝트/테이블 확인**: `list_projects`, `list_tables` — project_id·스키마 확인용.
+
+**사용 시점**: Supabase 테이블 데이터 정리, 마이그레이션 적용, 업다운/타이밍 게임용 Edge Function 배포 요청이 있을 때.
+
+---
+
+## 2. cursor-ide-browser
+
+**용도**: 브라우저에서 실제 화면 조작·확인 (프론트/웹앱 개발·테스트)
+
+- **순서**: `browser_navigate` → (필요 시) `browser_lock` → 스냅샷/클릭·입력 등 → `browser_unlock`.
+- **상호작용 전**: `browser_tabs`로 탭 확인, `browser_snapshot`으로 DOM·요소 ref 확인 후 클릭/입력.
+- **대기**: 긴 한 번 대기보다 1~3초 간격으로 스냅샷 확인하며 진행.
+
+**사용 시점**: localhost에서 게임/UI 동작 확인, 버그 재현, 푸시 후 화면 검증이 필요할 때.
+
+---
+
+## 3. user-Playwright
+
+**용도**: Playwright 기반 브라우저 자동화 (스크린샷, 폼 입력, 네비게이션 등)
+
+- `browser_*` 도구로 페이지 이동, 클릭, 입력, 스크린샷, 대기 등.
+- E2E 시나리오나 반복 동작 검증에 활용.
+
+**사용 시점**: 게임 플로우 E2E 테스트, 특정 화면 캡처가 필요할 때.
+
+---
+
+## 4. user-context7
+
+**용도**: 라이브러리 최신 문서·코드 예제 조회
+
+- `query-docs` / `resolve-library-id`로 React, Vite, Supabase 등 문서 검색.
+- API 사용법·마이그레이션 가이드 확인 시 활용.
+
+**사용 시점**: 의존성 버전별 API 차이, 공식 예제가 필요할 때.
+
+---
+
+## 공통
+
+- MCP 도구를 **호출하기 전** 해당 도구의 스키마/인자(예: mcps 폴더 내 `tools/*.json`)를 확인한 뒤 호출한다.
+- Supabase 작업 시 `project_id`는 `list_projects` 결과에서 이 프로젝트(mini-game)에 해당하는 id를 사용한다.

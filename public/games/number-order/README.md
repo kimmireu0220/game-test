@@ -1,7 +1,6 @@
-# 1→16 순서 터치 게임 (temp-game-2)
+# 숫자 레이스 (number-order)
 
-각자 자기 폰에서 **1부터 16까지 숫자를 순서대로 빠르게 터치**하고, **걸린 시간이 짧은 사람**이 이기는 멀티플레이어 게임.  
-(temp-game-2 슬롯에 구현)
+각자 자기 폰에서 **1부터 16까지 숫자를 순서대로 빠르게 터치**하고, **걸린 시간이 짧은 사람**이 이기는 멀티플레이어 게임.
 
 ---
 
@@ -176,7 +175,7 @@ RLS: timing-game과 동일하게 방 단위로 select/insert 제한.
 ## 파일 구조
 
 ```
-public/games/temp-game-2/
+public/games/number-order/
 ├── README.md
 ├── index.html
 ├── style.css
@@ -201,13 +200,6 @@ public/games/temp-game-2/
 1. Supabase에서 001_tables.sql, 002_rls.sql 순서 실행.
 2. Edge Function `start-number-order-round` 배포.
 3. config.example.js → config.js에 SUPABASE_URL, SUPABASE_ANON_KEY 설정.
-
----
-
-## manifest / GameCard
-
-- manifest.json: temp-game-2 항목 title을 "1→16 순서 터치"로 변경.
-- GameCard.tsx: getGameDescription("temp-game-2")를 이 게임 설명으로 수정.
 
 ---
 

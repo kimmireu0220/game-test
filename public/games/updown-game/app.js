@@ -608,7 +608,7 @@
       var startAtMs = state.currentRound && state.currentRound.start_at ? new Date(state.currentRound.start_at).getTime() : null;
       window.GameCountdown.run({
         container: slot,
-        countFrom: 3,
+        countFrom: 4,
         startAt: startAtMs,
         getServerTime: startAtMs ? getServerTimeMs : undefined,
         onComplete: function () {

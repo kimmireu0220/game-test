@@ -2,6 +2,6 @@
   {"file":"","title":"랜덤 게임","slug":"random-game"},
   {"file":"timing-game/index.html","title":"시간 맞추기","slug":"timing-game"},
   {"file":"updown-game/index.html","title":"업다운","slug":"updown-game"},
-  {"file":"temp-game/index.html","title":"임시 게임","slug":"temp-game"},
-  {"file":"temp-game-2/index.html","title":"1→16 순서 터치","slug":"temp-game-2"}
+  {"file":"number-order/index.html","title":"숫자 레이스","slug":"number-order"},
+  {"file":"temp-game/index.html","title":"임시 게임","slug":"temp-game"}
 ]
