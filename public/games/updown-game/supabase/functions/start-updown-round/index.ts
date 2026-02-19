@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
         status: "playing",
         winner_client_id: null,
       })
-      .select("id")
+      .select("id, created_at")
       .single();
 
     if (insertRoundError || !round) {
@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ round_id: round.id }),
+      JSON.stringify({ round_id: round.id, created_at: round.created_at }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {

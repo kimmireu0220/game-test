@@ -16,7 +16,6 @@ function setStoredBgmMuted(muted: boolean) {
   } catch {}
 }
 
-const FLOAT = 12;
 const btnStyle: React.CSSProperties = {
   position: "absolute",
   top: "max(12px, env(safe-area-inset-top))",

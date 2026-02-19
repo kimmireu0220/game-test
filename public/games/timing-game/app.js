@@ -739,6 +739,7 @@
     if (!window.GameCountdown || !slot) return onComplete();
     window.GameCountdown.run({
       container: slot,
+      countFrom: 4,
       startAt: startAt,
       getServerTime: getServerTimeMs,
       onComplete: onComplete

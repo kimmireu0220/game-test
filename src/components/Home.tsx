@@ -16,7 +16,7 @@ export function Home({ nickname, onNicknameChange }: HomeProps) {
     const base = import.meta.env.BASE_URL;
     fetch(`${base}manifest.json`)
       .then((r) => r.json())
-      .then(setGames)
+      .then((data: unknown) => setGames(Array.isArray(data) ? (data as GameEntry[]) : []))
       .catch(() => setGames([]));
   }, []);
 
@@ -30,7 +30,11 @@ export function Home({ nickname, onNicknameChange }: HomeProps) {
   const showPagination = games.length > PER_PAGE;
 
   // 빈 슬롯까지 포함해 항상 4칸(2x2) 유지
-  const slots = [...pageGames, ...Array.from<GameEntry | null>({ length: PER_PAGE - pageGames.length }, () => null)];
+  const emptySlots: (GameEntry | null)[] = Array.from(
+    { length: PER_PAGE - pageGames.length },
+    (): GameEntry | null => null
+  );
+  const slots: (GameEntry | null)[] = [...pageGames, ...emptySlots];
 
   return (
     <main style={{ minHeight: "100vh", display: "flex", flexDirection: "column", width: "100%", boxSizing: "border-box" }}>

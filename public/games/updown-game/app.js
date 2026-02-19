@@ -418,10 +418,10 @@
             clearInterval(state.lobbyRoundPollIntervalId);
             state.lobbyRoundPollIntervalId = null;
           }
-          state.currentRound = { id: data.round_id, min: 1, max: 1 };
+          state.currentRound = { id: data.round_id, min: 1, max: 1, created_at: data.created_at || null };
           state.winnerClientId = null;
           state.roundDurationSeconds = null;
-          state.roundCreatedAt = null;
+          state.roundCreatedAt = data.created_at || null;
           state.roundCorrectList = null;
           loadRoundPlayersAndShowGame();
         }
@@ -477,6 +477,7 @@
           if (payload.new && payload.new.status === "finished") {
             state.roundCorrectList = null;
             state.roundCreatedAt = payload.new.created_at || null;
+            if (state.currentRound && state.currentRound.id === roundId) state.currentRound.created_at = payload.new.created_at || state.currentRound.created_at;
             function goShowResult() {
               refreshLobbyWins(function () {
                 showRoundResult();
@@ -530,6 +531,7 @@
           if (payload.new && payload.new.status === "finished") {
             state.roundCorrectList = null;
             state.roundCreatedAt = payload.new.created_at || null;
+            if (state.currentRound && state.currentRound.id === roundId) state.currentRound.created_at = payload.new.created_at || state.currentRound.created_at;
             function goShowResult() {
               refreshLobbyWins(function () {
                 showRoundResult();
@@ -565,7 +567,7 @@
       state.unsubscribeRound = function () { sb.removeChannel(channel); };
     }
 
-    /* 먼저 round 화면(범위·플레이어·입력·제출)을 보여준 뒤, 그 위에 4-3-2-1 카운트다운 */
+    /* 먼저 round 화면(범위·플레이어·입력·제출)을 보여준 뒤, 그 위에 3-2-1 카운트다운 */
     function showRoundContent() {
       var min = state.currentRound ? state.currentRound.min : 1;
       var max = state.currentRound ? state.currentRound.max : 1;
@@ -583,7 +585,7 @@
     if (window.GameCountdown && slot) {
       window.GameCountdown.run({
         container: slot,
-        durationMs: 4000,
+        countFrom: 3,
         onComplete: function () { startRoundBgm(); }
       });
     } else {
@@ -625,8 +627,12 @@
     });
   }
 
-  function applyDurationsToResultZones(resultOrder, roundCreatedAt) {
-    if (!roundCreatedAt) return;
+  function getRoundStartTime() {
+    return (state.currentRound && state.currentRound.created_at) || state.roundCreatedAt || null;
+  }
+
+  function applyDurationsToResultZones(resultOrder, roundStartTime) {
+    if (!roundStartTime) return;
     var resultZones = document.getElementById("round-result-zones");
     if (!resultZones) return;
     var zones = resultZones.querySelectorAll(".round-player-zone[data-client-id]");
@@ -635,7 +641,7 @@
       var p = resultOrder.find(function (x) { return x.client_id === cid; });
       var durationEl = zone.querySelector(".round-zone-duration");
       if (durationEl && p && p.correct_at) {
-        durationEl.textContent = "완료시각: " + ((new Date(p.correct_at).getTime() - new Date(roundCreatedAt).getTime()) / 1000).toFixed(1) + "초";
+        durationEl.textContent = "완료시각: " + ((new Date(p.correct_at).getTime() - new Date(roundStartTime).getTime()) / 1000).toFixed(1) + "초";
       }
     });
   }
@@ -655,6 +661,36 @@
     if (resultOrder.length === 0) {
       resultOrder = players.slice();
     }
+    var needData = state.currentRound && state.currentRound.id && (!state.roundCorrectList || state.roundCorrectList.length === 0 || (resultOrder.some(function (p) { return p.correct_at; }) && !getRoundStartTime()));
+    var sb = getSupabase();
+    if (needData && sb) {
+      sb.rpc("get_updown_round_result", { p_round_id: state.currentRound.id }).maybeSingle()
+        .then(function (res) {
+          var row = (Array.isArray(res.data) && res.data.length) ? res.data[0] : res.data;
+          if (!res.error && row) {
+            if (row.created_at != null) {
+              state.currentRound.created_at = row.created_at;
+              state.roundCreatedAt = row.created_at;
+            }
+            if (Array.isArray(row.correct_list) && row.correct_list.length) {
+              state.roundCorrectList = row.correct_list;
+              var list = state.roundCorrectList;
+              var pl = state.roundPlayers || [];
+              resultOrder = list.map(function (c) {
+                var p = pl.find(function (x) { return x.client_id === c.client_id; });
+                return { client_id: c.client_id, nickname: (p && p.nickname) || c.client_id, correct_at: c.correct_at };
+              });
+            }
+          }
+          renderRoundResultContent(resultOrder);
+        })
+        .catch(function () { renderRoundResultContent(resultOrder); });
+      return;
+    }
+    renderRoundResultContent(resultOrder);
+  }
+
+  function renderRoundResultContent(resultOrder) {
     var resultZones = document.getElementById("round-result-zones");
     if (resultZones && resultOrder.length) {
       if (typeof GamePlayerZone !== "undefined" && GamePlayerZone.fillPlayerZones) {
@@ -664,8 +700,9 @@
           showWins: true,
           extrasFor: function (p) {
             var sec = "—";
-            if (p.correct_at && state.roundCreatedAt) {
-              sec = ((new Date(p.correct_at).getTime() - new Date(state.roundCreatedAt).getTime()) / 1000).toFixed(1) + "초";
+            var startTime = getRoundStartTime();
+            if (p.correct_at && startTime) {
+              sec = ((new Date(p.correct_at).getTime() - new Date(startTime).getTime()) / 1000).toFixed(1) + "초";
             }
             return [{ className: "round-zone-duration", textContent: "완료시각: " + sec }];
           }
@@ -697,8 +734,9 @@
           var durationEl = document.createElement("div");
           durationEl.className = "round-zone-duration";
           var sec = "—";
-          if (p.correct_at && state.roundCreatedAt) {
-            sec = ((new Date(p.correct_at).getTime() - new Date(state.roundCreatedAt).getTime()) / 1000).toFixed(1) + "초";
+          var startTime = getRoundStartTime();
+          if (p.correct_at && startTime) {
+            sec = ((new Date(p.correct_at).getTime() - new Date(startTime).getTime()) / 1000).toFixed(1) + "초";
           }
           durationEl.textContent = "완료시각: " + sec;
           zone.appendChild(durationEl);
@@ -711,18 +749,6 @@
           getWinCount: function (cid) { return (state.winCounts || {})[cid] || 0; },
           winsFormat: "paren"
         });
-      }
-      if (resultOrder.some(function (p) { return p.correct_at; }) && !state.roundCreatedAt && state.currentRound && state.currentRound.id) {
-        var sb = getSupabase();
-        if (sb) {
-          sb.from("updown_rounds").select("created_at").eq("id", state.currentRound.id).maybeSingle()
-            .then(function (res) {
-              if (!res.error && res.data && res.data.created_at) {
-                state.roundCreatedAt = res.data.created_at;
-                applyDurationsToResultZones(resultOrder, state.roundCreatedAt);
-              }
-            });
-        }
       }
     }
     document.querySelectorAll(".host-only").forEach(function (el) {

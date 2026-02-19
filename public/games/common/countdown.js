@@ -1,8 +1,8 @@
 /**
- * 공통 4-3-2-1 카운트다운 (타이밍 게임, 업다운 게임 등)
- * 사용: GameCountdown.run({ startAt? (ms), durationMs?, getServerTime?(), onComplete })
- * - startAt 있으면 서버 시각 기준 동기화 (getServerTime으로 offset 계산)
- * - 없으면 durationMs(기본 4000) 후 onComplete
+ * 공통 N~1 카운트다운 (타이밍 게임, 업다운 게임 등)
+ * 사용: GameCountdown.run({ countFrom?: number, startAt?, getServerTime?(), onComplete })
+ * - countFrom: N이면 N~1 표시 (예: 4 → 4,3,2,1 / 3 → 3,2,1). 기본 4
+ * - startAt 있으면 서버 시각 기준 동기화, 없으면 countFrom초 후 onComplete
  */
 (function () {
   "use strict";
@@ -11,12 +11,13 @@
   var BEEP_FREQ_GO = 1320;
   var BEEP_DURATION_MS = 120;
   var BEEP_DURATION_GO_MS = 180;
-  var STEPS_4_3_2_1 = [
-    { ms: 3000, num: 4 },
-    { ms: 2000, num: 3 },
-    { ms: 1000, num: 2 },
-    { ms: 0, num: 1 }
-  ];
+  /** countFrom(숫자)로 N~1 카운트다운 단계 생성. 예: countFrom 4 → 4,3,2,1 (각 1초) */
+  function buildStepsFromCount(countFrom) {
+    var n = Math.max(1, Math.floor(countFrom));
+    var steps = [];
+    for (var i = n; i >= 1; i--) steps.push({ ms: (i - 1) * 1000, num: i });
+    return steps;
+  }
 
   var audioContext = null;
 
@@ -58,9 +59,10 @@
 
   /**
    * options: {
-   *   container?: Element,  // 오버레이 부모 (기본 body)
+   *   container?: Element,
+   *   countFrom?: number,   // N이면 N~1 카운트다운 (예: 4 → 4,3,2,1 / 3 → 3,2,1). 없으면 4
    *   startAt?: number,     // 서버 시각(ms). 있으면 getServerTime으로 동기화
-   *   durationMs?: number, // startAt 없을 때 로컬 카운트다운 길이(기본 3000)
+   *   durationMs?: number, // startAt 없을 때 길이(ms). countFrom 있으면 countFrom*1000
    *   getServerTime?: function(): Promise<{serverNowMs, clientNowMs}>,
    *   onComplete: function()
    * }
@@ -70,11 +72,12 @@
     var onComplete = options.onComplete;
     if (typeof onComplete !== "function") return;
 
-    var startAt = options.startAt;
-    var durationMs = options.durationMs != null ? options.durationMs : 4000;
-    var getServerTime = options.getServerTime;
+    var countFrom = options.countFrom != null ? options.countFrom : 4;
+    var steps = buildStepsFromCount(countFrom);
+    var durationMs = options.durationMs != null ? options.durationMs : countFrom * 1000;
 
-    var steps = STEPS_4_3_2_1;
+    var startAt = options.startAt;
+    var getServerTime = options.getServerTime;
     var serverOffsetMs = 0;
 
     var pair = ensureOverlay(container);
