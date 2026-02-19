@@ -37,7 +37,8 @@
   position: relative;
   min-height: 0;
 }
-.game-page-wrapper .round-player-slot .round-player-zone {
+/* slot 없이 직접 나열되는 zone(업다운 게임 중)도 동일 스타일 */
+.game-page-wrapper .round-player-zones > .round-player-zone {
   position: relative;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 12px;
@@ -51,11 +52,12 @@
   width: 100%;
   box-sizing: border-box;
 }
-.game-page-wrapper .round-player-slot .round-player-zone.me {
+.game-page-wrapper .round-player-zones > .round-player-zone.me {
   border-color: #7fc8a8;
   border-width: 2px;
   background: rgba(127, 200, 168, 0.18);
 }
+.game-page-wrapper .round-player-zones > .round-player-zone .round-zone-p-num,
 .game-page-wrapper .round-player-slot .round-player-zone .round-zone-p-num {
   position: absolute;
   top: 12px;
@@ -75,6 +77,29 @@
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
+.game-page-wrapper .round-player-zones > .round-player-zone .round-zone-name,
+.game-page-wrapper .round-player-slot .round-player-zone .round-zone-name {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.game-page-wrapper .round-player-zones > .round-player-zone .round-zone-name-line,
+.game-page-wrapper .round-player-slot .round-player-zone .round-zone-name-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.game-page-wrapper .round-player-zones > .round-player-zone .round-zone-wins,
+.game-page-wrapper .round-player-slot .round-player-zone .round-zone-wins {
+  display: block;
+  font-size: 0.95rem;
+  color: #7fc8a8;
+  margin-top: 2px;
+}
 .game-page-wrapper .round-player-zone .round-zone-rank {
   display: block;
   font-size: 1rem;
@@ -90,23 +115,3 @@
 .game-page-wrapper .round-player-zone .round-zone-rank.rank-6,
 .game-page-wrapper .round-player-zone .round-zone-rank.rank-7,
 .game-page-wrapper .round-player-zone .round-zone-rank.rank-8 { color: rgba(255, 255, 255, 0.85) !important; }
-.game-page-wrapper .round-player-slot .round-player-zone .round-zone-name {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin-bottom: 6px;
-}
-.game-page-wrapper .round-player-slot .round-player-zone .round-zone-name-line {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.game-page-wrapper .round-player-slot .round-player-zone .round-zone-wins {
-  display: block;
-  font-size: 0.95rem;
-  color: #7fc8a8;
-  margin-top: 2px;
-}

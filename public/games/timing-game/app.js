@@ -125,10 +125,10 @@
       var img = btn.querySelector("img");
       if (state.bgmMuted) {
         btn.classList.add("muted");
-        if (img) img.src = "../images/bgm-off.png";
+        if (img) img.src = "../../images/bgm-off.png";
       } else {
         btn.classList.remove("muted");
-        if (img) img.src = "../images/bgm-on.png";
+        if (img) img.src = "../../images/bgm-on.png";
       }
     }
     function unlockAudioOnce() {
@@ -393,7 +393,7 @@
               var hostSpan = document.createElement("span");
               hostSpan.className = "lobby-player-host";
               var hostImg = document.createElement("img");
-              hostImg.src = "../images/host-icon.png";
+              hostImg.src = "../../images/host-icon.png";
               hostImg.alt = "방장";
               hostImg.className = "lobby-player-host-icon";
               hostSpan.appendChild(hostImg);

@@ -168,10 +168,10 @@
       var img = btn.querySelector("img");
       if (state.bgmMuted) {
         btn.classList.add("muted");
-        if (img) img.src = "../images/bgm-off.png";
+        if (img) img.src = "../../images/bgm-off.png";
       } else {
         btn.classList.remove("muted");
-        if (img) img.src = "../images/bgm-on.png";
+        if (img) img.src = "../../images/bgm-on.png";
       }
     }
     window.addEventListener("message", function (e) {
@@ -321,7 +321,7 @@
             var hostSpan = document.createElement("span");
             hostSpan.className = "lobby-player-host";
             var hostImg = document.createElement("img");
-            hostImg.src = "../images/host-icon.png";
+            hostImg.src = "../../images/host-icon.png";
             hostImg.alt = "방장";
             hostImg.className = "lobby-player-host-icon";
             hostSpan.appendChild(hostImg);
@@ -573,38 +573,51 @@
     var resultOrder = winnerPlayer ? [winnerPlayer].concat(others) : players;
     var resultZones = document.getElementById("round-result-zones");
     if (resultZones && resultOrder.length) {
-      resultZones.innerHTML = "";
-      resultZones.className = "round-player-zones count-" + Math.min(resultOrder.length, 8);
-      resultOrder.forEach(function (p, i) {
-        var slotEl = document.createElement("div");
-        slotEl.className = "round-player-slot";
-        var zone = document.createElement("div");
-        zone.className = "round-player-zone" + (p.client_id === state.clientId ? " me" : "");
-        zone.dataset.clientId = p.client_id;
-        var num = i + 1;
-        var pNumSpan = document.createElement("span");
-        pNumSpan.className = "round-zone-p-num num-" + num;
-        pNumSpan.textContent = "P" + num;
-        zone.appendChild(pNumSpan);
-        var nameEl = document.createElement("div");
-        nameEl.className = "round-zone-name";
-        var nameLine = document.createElement("div");
-        nameLine.className = "round-zone-name-line";
-        nameLine.appendChild(document.createTextNode(p.nickname));
-        nameEl.appendChild(nameLine);
-        var winsSpan = document.createElement("span");
-        winsSpan.className = "round-zone-wins";
-        nameEl.appendChild(winsSpan);
-        zone.appendChild(nameEl);
-        if (state.roundDurationSeconds != null) {
-          var durationEl = document.createElement("div");
-          durationEl.className = "round-zone-duration";
-          durationEl.textContent = state.roundDurationSeconds.toFixed(1) + "초";
-          zone.appendChild(durationEl);
-        }
-        slotEl.appendChild(zone);
-        resultZones.appendChild(slotEl);
-      });
+      if (typeof GamePlayerZone !== "undefined" && GamePlayerZone.fillPlayerZones) {
+        GamePlayerZone.fillPlayerZones(resultZones, resultOrder, state.winCounts || {}, state.clientId, {
+          wrapInSlot: true,
+          winsFormat: "paren",
+          showWins: true,
+          extrasFor: function () {
+            return state.roundDurationSeconds != null
+              ? [{ className: "round-zone-duration", textContent: state.roundDurationSeconds.toFixed(1) + "초" }]
+              : [];
+          }
+        });
+      } else {
+        resultZones.innerHTML = "";
+        resultZones.className = "round-player-zones count-" + Math.min(resultOrder.length, 8);
+        resultOrder.forEach(function (p, i) {
+          var slotEl = document.createElement("div");
+          slotEl.className = "round-player-slot";
+          var zone = document.createElement("div");
+          zone.className = "round-player-zone" + (p.client_id === state.clientId ? " me" : "");
+          zone.dataset.clientId = p.client_id;
+          var num = i + 1;
+          var pNumSpan = document.createElement("span");
+          pNumSpan.className = "round-zone-p-num num-" + num;
+          pNumSpan.textContent = "P" + num;
+          zone.appendChild(pNumSpan);
+          var nameEl = document.createElement("div");
+          nameEl.className = "round-zone-name";
+          var nameLine = document.createElement("div");
+          nameLine.className = "round-zone-name-line";
+          nameLine.appendChild(document.createTextNode(p.nickname));
+          nameEl.appendChild(nameLine);
+          var winsSpan = document.createElement("span");
+          winsSpan.className = "round-zone-wins";
+          nameEl.appendChild(winsSpan);
+          zone.appendChild(nameEl);
+          if (state.roundDurationSeconds != null) {
+            var durationEl = document.createElement("div");
+            durationEl.className = "round-zone-duration";
+            durationEl.textContent = state.roundDurationSeconds.toFixed(1) + "초";
+            zone.appendChild(durationEl);
+          }
+          slotEl.appendChild(zone);
+          resultZones.appendChild(slotEl);
+        });
+      }
       if (typeof GameRankDisplay !== "undefined" && GameRankDisplay.applyRanks) {
         GameRankDisplay.applyRanks(resultZones, resultOrder, {
           getWinCount: function (cid) { return (state.winCounts || {})[cid] || 0; },

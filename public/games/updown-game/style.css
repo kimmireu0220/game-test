@@ -5,7 +5,7 @@
   width: 100%;
   padding: 14px 18px;
   border: 1px solid rgba(255,255,255,0.3);
-  border-radius: 12px;.game-page-wrapper #round-gameplay { width: 100%; align-self: stretch; }
+  border-radius: 12px;
   background: rgba(255,255,255,0.08);
   color: #fff;
   font-size: 1.05rem;
@@ -26,58 +26,7 @@
   text-align: center;
   width: 100%;
 }
-/* 게임 중 플레이어 카드: 타이머와 동일(rank-display .round-player-slot .round-player-zone 스타일) */
-.game-page-wrapper #round-gameplay .round-player-zones { gap: 6px; }
-.game-page-wrapper #round-gameplay .round-player-zone {
-  position: relative;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 18px;
-  text-align: center;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-height: 120px;
-  width: 100%;
-  box-sizing: border-box;
-}
-.game-page-wrapper #round-gameplay .round-player-zone.me {
-  border-color: #7fc8a8;
-  border-width: 2px;
-  background: rgba(127, 200, 168, 0.18);
-}
-/* P뱃지: 타이머와 동일(좌상단 원형) */
-.game-page-wrapper #round-gameplay .round-player-zone .round-zone-p-num {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5em;
-  height: 1.5em;
-  padding: 0;
-  border-radius: 50%;
-  font-weight: 700;
-  font-size: 0.8rem;
-  margin: 0;
-  flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-.game-page-wrapper #round-gameplay .round-player-zone .round-zone-name {
-  font-size: 1.05rem;
-  font-weight: 600;
-  line-height: 1.35;
-}
-.game-page-wrapper #round-gameplay .round-player-zone .round-zone-wins {
-  font-size: 0.9rem;
-  color: #7fc8a8;
-  margin-top: 8px;
-  font-weight: 500;
-}
+/* 플레이어 카드: rank-display.css + player-zone.js 공통 */
 .game-page-wrapper .round-player-slot .round-player-zone .round-zone-duration {
   font-size: 1.1rem;
   font-weight: 700;
@@ -115,9 +64,11 @@
   min-height: 1.6em;
   margin-top: 6px;
   padding: 10px 0;
+  text-align: center;
+  width: 100%;
 }
 .game-page-wrapper .round-feedback.hidden { visibility: hidden; }
-.game-page-wrapper .round-feedback.up { color: #5ba3f5; }
-.game-page-wrapper .round-feedback.down { color: #ef6b5c; }
+.game-page-wrapper .round-feedback.up { color: #f87171; }
+.game-page-wrapper .round-feedback.down { color: #60a5fa; }
 .game-page-wrapper .round-feedback.correct { color: #8dd4b4; font-size: 1.35rem; }
 .game-page-wrapper #round-gameplay.hidden { display: none; }

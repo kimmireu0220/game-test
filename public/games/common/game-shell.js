@@ -14,8 +14,8 @@
   var buttonWrap = isEmbedded
     ? ""
     : '<div class="game-bgm-toggle-wrap">'
-    + '<button type="button" id="btn-refresh" title="새로고침"><img src="../images/reload.png" alt="새로고침" class="btn-refresh-icon"></button>'
-    + '<button type="button" id="btn-bgm-toggle" title="배경음악"><img src="../images/bgm-on.png" alt="BGM"></button>'
+    + '<button type="button" id="btn-refresh" title="새로고침"><img src="../../images/reload.png" alt="새로고침" class="btn-refresh-icon"></button>'
+    + '<button type="button" id="btn-bgm-toggle" title="배경음악"><img src="../../images/bgm-on.png" alt="BGM"></button>'
     + '</div>';
   var GAME_SHELL_HTML =
     '<div class="game-page-wrapper">'
