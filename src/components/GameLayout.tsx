@@ -75,9 +75,9 @@ export function GameLayout({ slug, iframeSrc }: GameLayoutProps) {
   }, [bgmMuted]);
 
   const base = import.meta.env.BASE_URL;
-  const reloadIconUrl = `${base}games/timing-game/images/reload.png`;
-  const bgmOnUrl = `${base}games/timing-game/images/bgm-on.png`;
-  const bgmOffUrl = `${base}games/timing-game/images/bgm-off.png`;
+  const reloadIconUrl = `${base}games/images/reload.png`;
+  const bgmOnUrl = `${base}games/images/bgm-on.png`;
+  const bgmOffUrl = `${base}games/images/bgm-off.png`;
 
   return (
     <main style={{ height: "100vh", position: "relative" }}>
