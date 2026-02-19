@@ -421,6 +421,8 @@
           state.currentRound = { id: data.round_id, min: 1, max: 50 };
           state.winnerClientId = null;
           state.roundDurationSeconds = null;
+          state.roundCreatedAt = null;
+          state.roundCorrectList = null;
           loadRoundPlayersAndShowGame();
         }
       })
@@ -458,6 +460,8 @@
     state.currentRound = { id: roundId, min: 1, max: 50 };
     state.winnerClientId = null;
     state.roundDurationSeconds = null;
+    state.roundCreatedAt = null;
+    state.roundCorrectList = null;
     ensureUpdownRoundDOM();
     showScreen("screen-round");
     var slot = document.getElementById("round-gameplay-slot");
@@ -471,15 +475,24 @@
       var sub = sb.channel("updown-round:" + roundId)
         .on("postgres_changes", { event: "UPDATE", schema: "public", table: "updown_rounds", filter: "id=eq." + roundId }, function (payload) {
           if (payload.new && payload.new.status === "finished") {
-            state.winnerClientId = payload.new.winner_client_id;
-            if (payload.new.winner_at && payload.new.created_at) {
-              state.roundDurationSeconds = (new Date(payload.new.winner_at).getTime() - new Date(payload.new.created_at).getTime()) / 1000;
-            } else {
-              state.roundDurationSeconds = null;
-            }
-            refreshLobbyWins(function () {
-              showRoundResult();
-            });
+            state.roundCreatedAt = payload.new.created_at || null;
+            state.roundCorrectList = null;
+            sb.from("updown_round_correct")
+              .select("client_id, correct_at")
+              .eq("round_id", roundId)
+              .order("correct_at", { ascending: true })
+              .then(function (res) {
+                state.roundCorrectList = (res.data || []).slice();
+                refreshLobbyWins(function () {
+                  showRoundResult();
+                });
+              })
+              .catch(function () {
+                state.roundCorrectList = [];
+                refreshLobbyWins(function () {
+                  showRoundResult();
+                });
+              });
           }
         })
         .subscribe();
@@ -511,15 +524,24 @@
       channel
         .on("postgres_changes", { event: "UPDATE", schema: "public", table: "updown_rounds", filter: "id=eq." + roundId }, function (payload) {
           if (payload.new && payload.new.status === "finished") {
-            state.winnerClientId = payload.new.winner_client_id;
-            if (payload.new.winner_at && payload.new.created_at) {
-              state.roundDurationSeconds = (new Date(payload.new.winner_at).getTime() - new Date(payload.new.created_at).getTime()) / 1000;
-            } else {
-              state.roundDurationSeconds = null;
-            }
-            refreshLobbyWins(function () {
-              showRoundResult();
-            });
+            state.roundCreatedAt = payload.new.created_at || null;
+            state.roundCorrectList = null;
+            sb.from("updown_round_correct")
+              .select("client_id, correct_at")
+              .eq("round_id", roundId)
+              .order("correct_at", { ascending: true })
+              .then(function (res) {
+                state.roundCorrectList = (res.data || []).slice();
+                refreshLobbyWins(function () {
+                  showRoundResult();
+                });
+              })
+              .catch(function () {
+                state.roundCorrectList = [];
+                refreshLobbyWins(function () {
+                  showRoundResult();
+                });
+              });
           }
         })
         .subscribe();
@@ -568,9 +590,14 @@
     if (slot) slot.classList.add("hidden");
     if (resultSection) resultSection.classList.remove("hidden");
     var players = state.roundPlayers || [];
-    var winnerPlayer = players.find(function (p) { return p.client_id === state.winnerClientId; });
-    var others = players.filter(function (p) { return p.client_id !== state.winnerClientId; });
-    var resultOrder = winnerPlayer ? [winnerPlayer].concat(others) : players;
+    var correctList = state.roundCorrectList || [];
+    var resultOrder = correctList.map(function (c) {
+      var p = players.find(function (x) { return x.client_id === c.client_id; });
+      return { client_id: c.client_id, nickname: (p && p.nickname) || c.client_id, correct_at: c.correct_at };
+    });
+    if (resultOrder.length === 0) {
+      resultOrder = players.slice();
+    }
     var resultZones = document.getElementById("round-result-zones");
     if (resultZones && resultOrder.length) {
       if (typeof GamePlayerZone !== "undefined" && GamePlayerZone.fillPlayerZones) {
@@ -578,10 +605,12 @@
           wrapInSlot: true,
           winsFormat: "paren",
           showWins: true,
-          extrasFor: function () {
-            return state.roundDurationSeconds != null
-              ? [{ className: "round-zone-duration", textContent: state.roundDurationSeconds.toFixed(1) + "초" }]
-              : [{ className: "round-zone-duration", textContent: "—" }];
+          extrasFor: function (p) {
+            var sec = "—";
+            if (p.correct_at && state.roundCreatedAt) {
+              sec = ((new Date(p.correct_at).getTime() - new Date(state.roundCreatedAt).getTime()) / 1000).toFixed(1) + "초";
+            }
+            return [{ className: "round-zone-duration", textContent: sec }];
           }
         });
       } else {
@@ -610,9 +639,11 @@
           zone.appendChild(nameEl);
           var durationEl = document.createElement("div");
           durationEl.className = "round-zone-duration";
-          durationEl.textContent = state.roundDurationSeconds != null
-            ? state.roundDurationSeconds.toFixed(1) + "초"
-            : "—";
+          var sec = "—";
+          if (p.correct_at && state.roundCreatedAt) {
+            sec = ((new Date(p.correct_at).getTime() - new Date(state.roundCreatedAt).getTime()) / 1000).toFixed(1) + "초";
+          }
+          durationEl.textContent = sec;
           zone.appendChild(durationEl);
           slotEl.appendChild(zone);
           resultZones.appendChild(slotEl);
@@ -628,7 +659,7 @@
     document.querySelectorAll(".host-only").forEach(function (el) {
       el.classList.toggle("hidden", !state.isHost);
     });
-    if (state.winnerClientId && state.clientId === state.winnerClientId) {
+    if (resultOrder.length > 0 && resultOrder[0].client_id === state.clientId) {
       try {
         var winAudio = new Audio("../common/sounds/win.mp3");
         winAudio.play();

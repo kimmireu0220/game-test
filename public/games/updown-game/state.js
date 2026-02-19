@@ -65,6 +65,8 @@
     winnerClientId: null,
     winnerNickname: null,
     roundDurationSeconds: null,
+    roundCreatedAt: null,
+    roundCorrectList: null,
     roundPlayers: null
   };
 

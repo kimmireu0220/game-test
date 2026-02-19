@@ -33,7 +33,7 @@ export function Home({ nickname, onNicknameChange }: HomeProps) {
         </button>
       </div>
       <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", padding: "2rem" }}>
-        <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "1.25rem", width: "100%", maxWidth: "360px", justifyContent: "center" }}>
+        <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "1.25rem", width: "100%", maxWidth: "440px", justifyContent: "center" }}>
           {games.map((g) => (
             <GameCard key={g.slug} game={g} />
           ))}

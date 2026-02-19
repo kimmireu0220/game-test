@@ -24,7 +24,7 @@ function getGameDescription(slug: string): string {
   return "";
 }
 
-const CARD_SIZE = 160;
+const CARD_SIZE = 200;
 
 const cardLinkStyle: React.CSSProperties = {
   display: "flex",
@@ -48,19 +48,15 @@ const cardLinkStyle: React.CSSProperties = {
 
 const infoBtnStyle: React.CSSProperties = {
   position: "absolute",
-  top: 4,
-  right: 4,
+  top: 8,
+  right: 16,
   minWidth: 44,
   minHeight: 44,
   width: 44,
   height: 44,
   padding: 0,
-  borderRadius: "50%",
-  border: "1px solid rgba(255,255,255,0.4)",
-  background: "rgba(0,0,0,0.3)",
-  color: "rgba(255,255,255,0.9)",
-  fontSize: "0.85rem",
-  fontWeight: 700,
+  border: "none",
+  background: "transparent",
   cursor: "pointer",
   display: "flex",
   alignItems: "center",
@@ -89,7 +85,11 @@ export function GameCard({ game }: GameCardProps) {
           setShowInfo(true);
         }}
       >
-        i
+        <img
+          src={`${import.meta.env.BASE_URL}images/info-icon.png`}
+          alt=""
+          style={{ width: 24, height: 24, objectFit: "contain", display: "block" }}
+        />
       </button>
       <Link
         to={`/games/${game.slug}/`}
