@@ -19,10 +19,10 @@ function setStoredBgmMuted(muted: boolean) {
 const FLOAT = 12;
 const btnStyle: React.CSSProperties = {
   position: "absolute",
-  top: FLOAT,
+  top: "max(12px, env(safe-area-inset-top))",
   zIndex: 10,
-  width: 36,
-  height: 36,
+  width: 44,
+  height: 44,
   padding: 0,
   border: "1px solid rgba(255,255,255,0.3)",
   borderRadius: 8,
@@ -101,24 +101,24 @@ export function GameLayout({ slug, iframeSrc }: GameLayoutProps) {
         type="button"
         onClick={handleRefresh}
         title="새로고침"
-        style={{ ...btnStyle, left: FLOAT }}
+        style={{ ...btnStyle, left: "max(12px, env(safe-area-inset-left))" }}
       >
         <img
           src={reloadIconUrl}
           alt="새로고침"
-          style={{ width: 22, height: 22, display: "block" }}
+          style={{ width: 24, height: 24, display: "block" }}
         />
       </button>
       <button
         type="button"
         onClick={handleBgmToggle}
         title={bgmMuted ? "배경음악 켜기" : "배경음악 끄기"}
-        style={{ ...btnStyle, right: FLOAT, left: "auto", opacity: bgmMuted ? 0.6 : 1 }}
+        style={{ ...btnStyle, right: "max(12px, env(safe-area-inset-right))", left: "auto", opacity: bgmMuted ? 0.6 : 1 }}
       >
         <img
           src={bgmMuted ? bgmOffUrl : bgmOnUrl}
           alt="BGM"
-          style={{ width: 22, height: 22, display: "block" }}
+          style={{ width: 24, height: 24, display: "block" }}
         />
       </button>
     </main>

@@ -13,7 +13,7 @@
 }
 .game-page-wrapper .round-countdown-overlay.hidden { display: none; }
 .game-page-wrapper .round-countdown-overlay #round-countdown {
-  font-size: 12rem;
+  font-size: clamp(4rem, 22vmin, 12rem);
   font-weight: bold;
   color: #fff;
   text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
@@ -21,7 +21,7 @@
   line-height: 1;
 }
 .game-page-wrapper .round-live-timer {
-  font-size: 4.5rem;
+  font-size: clamp(2.5rem, 12vmin, 4.5rem);
   font-weight: 700;
   color: #ff6b6b;
   font-variant-numeric: tabular-nums;

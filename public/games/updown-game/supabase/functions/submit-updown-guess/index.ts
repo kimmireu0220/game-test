@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
 
     const { data: round, error: roundError } = await supabase
       .from("updown_rounds")
-      .select("id, secret_number, status")
+      .select("id, room_id, secret_number, status")
       .eq("id", round_id)
       .single();
 
@@ -79,20 +79,40 @@ Deno.serve(async (req) => {
     const secret = Number(round.secret_number);
 
     if (g === secret) {
-      const { error: updateError } = await supabase
-        .from("updown_rounds")
-        .update({
-          status: "finished",
-          winner_client_id: client_id,
-          winner_at: new Date().toISOString(),
-        })
-        .eq("id", round_id);
+      const correctAt = new Date().toISOString();
+      const { error: insertError } = await supabase
+        .from("updown_round_correct")
+        .insert({ round_id, client_id, correct_at: correctAt });
 
-      if (updateError) {
+      if (insertError && insertError.code !== "23505") {
         return new Response(
-          JSON.stringify({ error: updateError.message }),
+          JSON.stringify({ error: insertError.message }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
+      }
+
+      const roomId = round.room_id;
+      const { count: correctCount } = await supabase
+        .from("updown_round_correct")
+        .select("client_id", { count: "exact", head: true })
+        .eq("round_id", round_id);
+      const { count: playerCount } = await supabase
+        .from("updown_room_players")
+        .select("client_id", { count: "exact", head: true })
+        .eq("room_id", roomId);
+
+      if (playerCount != null && correctCount != null && correctCount >= playerCount) {
+        const { error: updateError } = await supabase
+          .from("updown_rounds")
+          .update({ status: "finished" })
+          .eq("id", round_id);
+
+        if (updateError) {
+          return new Response(
+            JSON.stringify({ error: updateError.message }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
       }
 
       return new Response(
