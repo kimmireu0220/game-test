@@ -303,12 +303,15 @@
       }
     }
     setupLobbyChannel(sb);
+    /* 채널 SUBSCRIBED 전에도 호스트면 시작 버튼 활성화 (구독 지연 시에도 바로 사용 가능) */
+    var btnStart = document.getElementById("btn-start-round");
+    if (btnStart) btnStart.disabled = !state.isHost;
   }
 
   function setupLobbyChannel(sb) {
     var channel = sb.channel("room:" + state.roomId);
     var btnStart = document.getElementById("btn-start-round");
-    btnStart.disabled = true;
+    if (btnStart) btnStart.disabled = !state.isHost;
     channel
       .on("postgres_changes", { event: "*", schema: "public", table: "room_players", filter: "room_id=eq." + state.roomId }, refreshLobbyPlayers)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "rounds", filter: "room_id=eq." + state.roomId }, function (payload) {
@@ -519,8 +522,40 @@
       });
   }
 
+  function ensureTimingRoundDOM() {
+    var slot = document.getElementById("round-gameplay-slot");
+    if (!slot || slot.children.length > 0) return;
+    var countdownOverlay = document.createElement("div");
+    countdownOverlay.id = "round-countdown-overlay";
+    countdownOverlay.className = "round-countdown-overlay hidden";
+    var countdownP = document.createElement("p");
+    countdownP.id = "round-countdown";
+    countdownOverlay.appendChild(countdownP);
+    var gameplayWrap = document.createElement("div");
+    gameplayWrap.id = "round-gameplay-wrap";
+    var targetMsg = document.createElement("p");
+    targetMsg.id = "round-target-msg";
+    gameplayWrap.appendChild(targetMsg);
+    var liveTimer = document.createElement("p");
+    liveTimer.id = "round-live-timer";
+    liveTimer.className = "round-live-timer";
+    gameplayWrap.appendChild(liveTimer);
+    var liveZones = document.createElement("div");
+    liveZones.id = "round-live-zones";
+    liveZones.className = "round-player-zones";
+    var btnPress = document.createElement("button");
+    btnPress.type = "button";
+    btnPress.id = "btn-press";
+    btnPress.disabled = true;
+    btnPress.textContent = "누르기";
+    slot.appendChild(countdownOverlay);
+    slot.appendChild(gameplayWrap);
+    slot.appendChild(liveZones);
+    slot.appendChild(btnPress);
+  }
+
   function renderRoundPlayerZones(players, winCounts) {
-    var container = document.getElementById("round-player-zones");
+    var container = document.getElementById("round-live-zones");
     if (!container) return;
     var list = players || [];
     container.innerHTML = "";
@@ -563,7 +598,8 @@
   }
 
   function updateRoundZoneResult(clientId, pressTimeSec, offsetSec) {
-    var zone = document.querySelector(".round-player-zone[data-client-id=\"" + clientId + "\"]");
+    var slot = document.getElementById("round-gameplay-slot");
+    var zone = slot ? slot.querySelector(".round-player-zone[data-client-id=\"" + clientId + "\"]") : null;
     if (!zone) return;
     var timeEl = zone.querySelector(".round-zone-time");
     var errorEl = zone.querySelector(".round-zone-error");
@@ -761,17 +797,18 @@
       state.lobbyRoundPollIntervalId = null;
     }
     state.currentRound = round;
+    ensureTimingRoundDOM();
     document.getElementById("round-target-msg").textContent = round.target_seconds + "초에 맞춰 누르세요.";
     document.getElementById("round-countdown").textContent = "";
     document.getElementById("btn-press").disabled = true;
     var gameplayWrap = document.getElementById("round-gameplay-wrap");
-    var actionsWrap = document.getElementById("round-end-actions");
     var btnPress = document.getElementById("btn-press");
+    var resultSection = document.getElementById("round-result-section");
     if (gameplayWrap) gameplayWrap.classList.remove("hidden");
-    if (actionsWrap) actionsWrap.classList.add("hidden");
     if (btnPress) btnPress.classList.remove("hidden");
-    var resultTitleEl = document.getElementById("round-result-title");
-    if (resultTitleEl) resultTitleEl.classList.add("hidden");
+    if (resultSection) resultSection.classList.add("hidden");
+    var slot = document.getElementById("round-gameplay-slot");
+    if (slot) slot.classList.remove("hidden");
     var liveTimerEl = document.getElementById("round-live-timer");
     if (liveTimerEl) liveTimerEl.textContent = "00:00";
     showScreen("screen-round");
@@ -867,7 +904,7 @@
   }
 
   function applyRoundEndRanks() {
-    var container = document.getElementById("round-player-zones");
+    var container = document.getElementById("round-result-zones");
     var resultOrder = state.roundResultOrder || [];
     if (typeof GameRankDisplay !== "undefined" && GameRankDisplay.applyRanks) {
       GameRankDisplay.applyRanks(container, resultOrder, {
@@ -877,31 +914,71 @@
     }
   }
 
+  function buildTimingResultZones() {
+    var container = document.getElementById("round-result-zones");
+    if (!container || !state.roundResultOrder || !state.roundResultOrder.length) return;
+    var targetSec = (state.currentRound && state.currentRound.target_seconds) || 0;
+    container.innerHTML = "";
+    container.className = "round-player-zones count-" + Math.min(state.roundResultOrder.length, 8);
+    state.roundResultOrder.forEach(function (p, i) {
+      var slot = document.createElement("div");
+      slot.className = "round-player-slot";
+      var zone = document.createElement("div");
+      zone.className = "round-player-zone" + (p.client_id === state.clientId ? " me" : "");
+      zone.dataset.clientId = p.client_id;
+      var num = i + 1;
+      var pNumSpan = document.createElement("span");
+      pNumSpan.className = "round-zone-p-num num-" + num;
+      pNumSpan.textContent = "P" + num;
+      zone.appendChild(pNumSpan);
+      var nameEl = document.createElement("div");
+      nameEl.className = "round-zone-name";
+      var nameLine = document.createElement("div");
+      nameLine.className = "round-zone-name-line";
+      nameLine.appendChild(document.createTextNode(p.nickname || p.client_id));
+      nameEl.appendChild(nameLine);
+      var winsSpan = document.createElement("span");
+      winsSpan.className = "round-zone-wins";
+      nameEl.appendChild(winsSpan);
+      zone.appendChild(nameEl);
+      var timeEl = document.createElement("div");
+      timeEl.className = "round-zone-time";
+      var errorEl = document.createElement("div");
+      errorEl.className = "round-zone-error";
+      if (p.offsetMs != null) {
+        var pressTimeSec = targetSec + p.offsetMs / 1000;
+        var parts = (pressTimeSec || 0).toFixed(2).split(".");
+        timeEl.textContent = (parts[0] || "0").padStart(2, "0") + ":" + (parts[1] || "00");
+        var sign = (p.offsetMs || 0) >= 0 ? "+" : "";
+        errorEl.textContent = "오차: " + sign + (p.offsetMs / 1000).toFixed(2);
+      } else {
+        timeEl.textContent = "—";
+        errorEl.textContent = "—";
+      }
+      zone.appendChild(timeEl);
+      zone.appendChild(errorEl);
+      slot.appendChild(zone);
+      container.appendChild(slot);
+    });
+  }
+
   function showRoundEnd() {
     if (state.timerBgmAudio) {
       state.timerBgmAudio.pause();
       state.timerBgmAudio = null;
     }
-    var gameplayWrap = document.getElementById("round-gameplay-wrap");
-    var actionsWrap = document.getElementById("round-end-actions");
+    var slot = document.getElementById("round-gameplay-slot");
+    var resultSection = document.getElementById("round-result-section");
     var againBtn = document.getElementById("btn-round-play-again");
     var leaveBtn = document.getElementById("btn-round-leave");
-    if (gameplayWrap) gameplayWrap.classList.add("hidden");
-    if (actionsWrap) actionsWrap.classList.remove("hidden");
-    var resultTitleEl = document.getElementById("round-result-title");
-    if (resultTitleEl) resultTitleEl.classList.remove("hidden");
-    var btnPress = document.getElementById("btn-press");
-    if (btnPress) btnPress.classList.add("hidden");
+    if (slot) slot.classList.add("hidden");
+    if (resultSection) resultSection.classList.remove("hidden");
+    buildTimingResultZones();
     if (againBtn) {
       againBtn.onclick = function () {
         state.startButtonDelayFromPlayAgain = true;
-        if (actionsWrap) actionsWrap.classList.add("hidden");
-        if (document.getElementById("round-gameplay-wrap")) {
-          document.getElementById("round-gameplay-wrap").classList.remove("hidden");
-        }
-        if (document.getElementById("btn-press")) {
-          document.getElementById("btn-press").classList.remove("hidden");
-        }
+        if (resultSection) resultSection.classList.add("hidden");
+        if (slot) slot.classList.remove("hidden");
         showScreen("screen-lobby");
         enterLobby();
       };

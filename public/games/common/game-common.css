@@ -173,7 +173,17 @@
 .game-page-wrapper .round-result-title.hidden { display: none; }
 .game-page-wrapper .round-result-wrap { text-align: center; width: 100%; }
 .game-page-wrapper .round-result-wrap.hidden { display: none; }
-.game-page-wrapper .round-result-wrap .button-row {
+.game-page-wrapper .round-result-section { text-align: center; width: 100%; }
+.game-page-wrapper .round-result-section.hidden { display: none; }
+.game-page-wrapper #round-gameplay-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+.game-page-wrapper #round-gameplay-slot.hidden { display: none; }
+.game-page-wrapper .round-result-wrap .button-row,
+.game-page-wrapper .round-result-section .button-row {
   margin-top: 40px;
   margin-left: auto;
   margin-right: auto;

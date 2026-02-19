@@ -9,77 +9,10 @@
   <link rel="stylesheet" href="../common/rank-display.css">
 </head>
 <body>
-  <div class="game-page-wrapper">
-    <div class="game-bgm-toggle-wrap">
-      <button type="button" id="btn-refresh" title="새로고침"><img src="../images/reload.png" alt="새로고침" class="btn-refresh-icon"></button>
-      <button type="button" id="btn-bgm-toggle" title="배경음악"><img src="../images/bgm-on.png" alt="BGM"></button>
-    </div>
-    <div id="screen-nickname" class="screen">
-      <label class="screen-form-label" for="nickname-display-text">닉네임</label>
-      <div id="nickname-display-text" class="screen-field" role="textbox" aria-readonly="true"></div>
-      <div class="button-row">
-        <button type="button" id="btn-create-room">방 만들기</button>
-        <button type="button" id="btn-join-room">방 들어가기</button>
-      </div>
-    </div>
-
-    <div id="screen-create" class="screen hidden">
-      <label class="screen-form-label" for="input-room-name">방 제목 (선택)</label>
-      <input type="text" id="input-room-name" class="screen-field" maxlength="50" placeholder="비워두면 기본 제목 사용">
-      <div class="button-row">
-        <button type="button" id="btn-create-submit">방 만들기</button>
-        <button type="button" id="btn-back-from-create">뒤로</button>
-      </div>
-    </div>
-
-    <div id="screen-create-done" class="screen hidden">
-      <p>방이 만들어졌어요. 코드를 공유하세요.</p>
-      <p class="room-code" id="display-room-code"></p>
-      <button type="button" id="btn-enter-lobby">대기실로</button>
-    </div>
-
-    <div id="screen-join" class="screen hidden">
-      <label class="screen-form-label" for="input-join-code">방 코드</label>
-      <input type="text" id="input-join-code" class="screen-field" maxlength="6" placeholder="6자리 코드" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code">
-      <div class="button-row">
-        <button type="button" id="btn-join-submit">입장</button>
-        <button type="button" id="btn-back-from-join">뒤로</button>
-      </div>
-    </div>
-
-    <div id="screen-lobby" class="screen hidden">
-      <h2 id="lobby-room-name"></h2>
-      <ul id="lobby-players"></ul>
-      <p id="lobby-notice" class="lobby-notice hidden"></p>
-      <div class="button-row">
-        <button type="button" id="btn-start-round" class="host-only hidden">시작</button>
-        <button type="button" id="btn-leave-room">나가기</button>
-      </div>
-    </div>
-
-    <div id="screen-round" class="screen hidden">
-      <div id="round-gameplay" class="round-gameplay">
-        <p id="round-range-msg" class="round-range-msg">현재 범위: <span id="round-range-min">1</span> ~ <span id="round-range-max">100</span></p>
-        <div id="round-player-zones" class="round-player-zones"></div>
-        <div class="round-input-row">
-          <input type="number" id="input-guess" min="1" max="1" placeholder="숫자" inputmode="numeric">
-          <button type="button" id="btn-submit-guess">제출</button>
-        </div>
-        <p id="round-feedback" class="round-feedback hidden"></p>
-      </div>
-      <div id="round-result-wrap" class="round-result-wrap hidden">
-        <h2 id="round-result-title" class="round-result-title">게임 결과</h2>
-        <div id="round-result-player-zones" class="round-player-zones"></div>
-        <div class="button-row">
-          <button type="button" id="btn-round-play-again">다시 하기</button>
-          <button type="button" id="btn-round-leave">나가기</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
+  <div id="app"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../common/rank-display.js"></script>
+  <script src="../common/game-shell.js"></script>
   <script src="config.example.js"></script>
   <script src="state.js"></script>
   <script src="app.js"></script>

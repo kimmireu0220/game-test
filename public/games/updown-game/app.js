@@ -18,6 +18,44 @@
     if (el) el.classList.remove("hidden");
   }
 
+  function ensureUpdownRoundDOM() {
+    var slot = document.getElementById("round-gameplay-slot");
+    if (!slot || slot.children.length > 0) return;
+    var gameplay = document.createElement("div");
+    gameplay.id = "round-gameplay";
+    gameplay.className = "round-gameplay";
+    var rangeMsg = document.createElement("p");
+    rangeMsg.id = "round-range-msg";
+    rangeMsg.className = "round-range-msg";
+    rangeMsg.innerHTML = "현재 범위: <span id=\"round-range-min\">1</span> ~ <span id=\"round-range-max\">100</span>";
+    gameplay.appendChild(rangeMsg);
+    var liveZones = document.createElement("div");
+    liveZones.id = "round-live-zones";
+    liveZones.className = "round-player-zones";
+    gameplay.appendChild(liveZones);
+    var inputRow = document.createElement("div");
+    inputRow.className = "round-input-row";
+    var inputGuess = document.createElement("input");
+    inputGuess.type = "number";
+    inputGuess.id = "input-guess";
+    inputGuess.min = "1";
+    inputGuess.max = "1";
+    inputGuess.placeholder = "숫자";
+    inputGuess.setAttribute("inputmode", "numeric");
+    var btnSubmit = document.createElement("button");
+    btnSubmit.type = "button";
+    btnSubmit.id = "btn-submit-guess";
+    btnSubmit.textContent = "제출";
+    inputRow.appendChild(inputGuess);
+    inputRow.appendChild(btnSubmit);
+    gameplay.appendChild(inputRow);
+    var feedback = document.createElement("p");
+    feedback.id = "round-feedback";
+    feedback.className = "round-feedback hidden";
+    gameplay.appendChild(feedback);
+    slot.appendChild(gameplay);
+  }
+
   function init() {
     var sb = getSupabase();
     if (!sb) {
@@ -60,8 +98,10 @@
     document.getElementById("btn-leave-room").onclick = leaveRoom;
     document.getElementById("btn-submit-guess").onclick = submitGuess;
     document.getElementById("btn-round-play-again").onclick = function () {
-      document.getElementById("round-result-wrap").classList.add("hidden");
-      document.getElementById("round-gameplay").classList.remove("hidden");
+      var resultSection = document.getElementById("round-result-section");
+      var slot = document.getElementById("round-gameplay-slot");
+      if (resultSection) resultSection.classList.add("hidden");
+      if (slot) slot.classList.remove("hidden");
       showScreen("screen-lobby");
       enterLobby();
     };
@@ -372,9 +412,12 @@
     state.currentRound = { id: roundId, min: 1, max: 1 }; /* 임시: 1~1 */
     state.winnerClientId = null;
     state.roundDurationSeconds = null;
+    ensureUpdownRoundDOM();
     showScreen("screen-round");
-    document.getElementById("round-gameplay").classList.remove("hidden");
-    document.getElementById("round-result-wrap").classList.add("hidden");
+    var slot = document.getElementById("round-gameplay-slot");
+    var resultSection = document.getElementById("round-result-section");
+    if (slot) slot.classList.remove("hidden");
+    if (resultSection) resultSection.classList.add("hidden");
     refreshLobbyWins();
     loadRoundPlayersAndShowGame();
     var sb = getSupabase();
@@ -399,9 +442,12 @@
   }
 
   function showRoundScreen() {
+    ensureUpdownRoundDOM();
     showScreen("screen-round");
-    document.getElementById("round-gameplay").classList.remove("hidden");
-    document.getElementById("round-result-wrap").classList.add("hidden");
+    var slot = document.getElementById("round-gameplay-slot");
+    var resultSection = document.getElementById("round-result-section");
+    if (slot) slot.classList.remove("hidden");
+    if (resultSection) resultSection.classList.add("hidden");
     var min = state.currentRound ? state.currentRound.min : 1;
     var max = state.currentRound ? state.currentRound.max : 1; /* 임시: 1~1 */
     document.getElementById("round-range-min").textContent = min;
@@ -435,7 +481,7 @@
   }
 
   function renderRoundPlayerZones(players, winCounts) {
-    var container = document.getElementById("round-player-zones");
+    var container = document.getElementById("round-live-zones");
     if (!container) return;
     var list = players || [];
     container.innerHTML = "";
@@ -461,19 +507,21 @@
   }
 
   function showRoundResult() {
-    document.getElementById("round-gameplay").classList.add("hidden");
-    document.getElementById("round-result-wrap").classList.remove("hidden");
+    var slot = document.getElementById("round-gameplay-slot");
+    var resultSection = document.getElementById("round-result-section");
+    if (slot) slot.classList.add("hidden");
+    if (resultSection) resultSection.classList.remove("hidden");
     var players = state.roundPlayers || [];
     var winnerPlayer = players.find(function (p) { return p.client_id === state.winnerClientId; });
     var others = players.filter(function (p) { return p.client_id !== state.winnerClientId; });
     var resultOrder = winnerPlayer ? [winnerPlayer].concat(others) : players;
-    var resultZones = document.getElementById("round-result-player-zones");
+    var resultZones = document.getElementById("round-result-zones");
     if (resultZones && resultOrder.length) {
       resultZones.innerHTML = "";
       resultZones.className = "round-player-zones count-" + Math.min(resultOrder.length, 8);
       resultOrder.forEach(function (p, i) {
-        var slot = document.createElement("div");
-        slot.className = "round-player-slot";
+        var slotEl = document.createElement("div");
+        slotEl.className = "round-player-slot";
         var zone = document.createElement("div");
         zone.className = "round-player-zone" + (p.client_id === state.clientId ? " me" : "");
         zone.dataset.clientId = p.client_id;
@@ -498,8 +546,8 @@
           durationEl.textContent = state.roundDurationSeconds.toFixed(1) + "초";
           zone.appendChild(durationEl);
         }
-        slot.appendChild(zone);
-        resultZones.appendChild(slot);
+        slotEl.appendChild(zone);
+        resultZones.appendChild(slotEl);
       });
       if (typeof GameRankDisplay !== "undefined" && GameRankDisplay.applyRanks) {
         GameRankDisplay.applyRanks(resultZones, resultOrder, {
