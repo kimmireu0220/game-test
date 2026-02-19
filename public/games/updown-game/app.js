@@ -64,7 +64,7 @@
     var rangeMsg = document.createElement("p");
     rangeMsg.id = "round-range-msg";
     rangeMsg.className = "round-range-msg";
-    rangeMsg.innerHTML = "<span style=\"color:#f87171\">↑ <span id=\"round-range-min\">1</span></span> &nbsp; <span style=\"color:#60a5fa\">↓ <span id=\"round-range-max\">50</span></span>";
+    rangeMsg.innerHTML = "<span style=\"color:#f87171\">↑ <span id=\"round-range-min\">1</span></span> &nbsp; <span style=\"color:#60a5fa\">↓ <span id=\"round-range-max\">1</span></span>";
     gameplay.appendChild(rangeMsg);
     var liveZones = document.createElement("div");
     liveZones.id = "round-live-zones";
@@ -418,7 +418,7 @@
             clearInterval(state.lobbyRoundPollIntervalId);
             state.lobbyRoundPollIntervalId = null;
           }
-          state.currentRound = { id: data.round_id, min: 1, max: 50 };
+          state.currentRound = { id: data.round_id, min: 1, max: 1 };
           state.winnerClientId = null;
           state.roundDurationSeconds = null;
           state.roundCreatedAt = null;
@@ -457,7 +457,7 @@
       clearInterval(state.lobbyRoundPollIntervalId);
       state.lobbyRoundPollIntervalId = null;
     }
-    state.currentRound = { id: roundId, min: 1, max: 50 };
+    state.currentRound = { id: roundId, min: 1, max: 1 };
     state.winnerClientId = null;
     state.roundDurationSeconds = null;
     state.roundCreatedAt = null;
@@ -475,28 +475,37 @@
       var sub = sb.channel("updown-round:" + roundId)
         .on("postgres_changes", { event: "UPDATE", schema: "public", table: "updown_rounds", filter: "id=eq." + roundId }, function (payload) {
           if (payload.new && payload.new.status === "finished") {
-            state.roundCreatedAt = payload.new.created_at || null;
             state.roundCorrectList = null;
-            var correctPromise = sb.from("updown_round_correct")
-              .select("client_id, correct_at")
-              .eq("round_id", roundId)
-              .order("correct_at", { ascending: true })
-              .then(function (res) { return (res.data || []).slice(); });
-            var roundPromise = sb.from("updown_rounds")
-              .select("created_at")
-              .eq("id", roundId)
-              .maybeSingle()
-              .then(function (res) {
-                if (res.error) return null;
-                return res.data && res.data.created_at ? res.data.created_at : null;
-              });
-            Promise.allSettled([correctPromise, roundPromise]).then(function (results) {
-              state.roundCorrectList = results[0].status === "fulfilled" ? results[0].value : [];
-              if (results[1].status === "fulfilled" && results[1].value != null) state.roundCreatedAt = results[1].value;
+            state.roundCreatedAt = payload.new.created_at || null;
+            function goShowResult() {
               refreshLobbyWins(function () {
                 showRoundResult();
               });
-            });
+            }
+            sb.rpc("get_updown_round_result", { p_round_id: roundId }).maybeSingle()
+              .then(function (res) {
+                var row = (Array.isArray(res.data) && res.data.length) ? res.data[0] : res.data;
+                if (!res.error && row && Array.isArray(row.correct_list) && row.correct_list.length) {
+                  state.roundCorrectList = row.correct_list;
+                  if (row.created_at != null) state.roundCreatedAt = row.created_at;
+                  goShowResult();
+                  return;
+                }
+                sb.from("updown_round_correct").select("client_id, correct_at").eq("round_id", roundId).order("correct_at", { ascending: true })
+                  .then(function (cRes) {
+                    if (cRes && !cRes.error && cRes.data) state.roundCorrectList = cRes.data;
+                    goShowResult();
+                  })
+                  .catch(function () { goShowResult(); });
+              })
+              .catch(function () {
+                sb.from("updown_round_correct").select("client_id, correct_at").eq("round_id", roundId).order("correct_at", { ascending: true })
+                  .then(function (cRes) {
+                    if (cRes && !cRes.error && cRes.data) state.roundCorrectList = cRes.data;
+                    goShowResult();
+                  })
+                  .catch(goShowResult);
+              });
           }
         })
         .subscribe();
@@ -511,16 +520,7 @@
     var resultSection = document.getElementById("round-result-section");
     if (slot) slot.classList.remove("hidden");
     if (resultSection) resultSection.classList.add("hidden");
-    startRoundBgm();
-    var min = state.currentRound ? state.currentRound.min : 1;
-    var max = state.currentRound ? state.currentRound.max : 50;
-    document.getElementById("round-range-min").textContent = min;
-    document.getElementById("round-range-max").textContent = max;
-    document.getElementById("input-guess").min = min;
-    document.getElementById("input-guess").max = max;
-    document.getElementById("input-guess").value = "";
-    document.getElementById("round-feedback").classList.add("hidden");
-    renderRoundPlayerZones(state.roundPlayers || [], state.winCounts || {});
+
     var sb = getSupabase();
     if (sb && state.currentRound) {
       var roundId = state.currentRound.id;
@@ -528,32 +528,66 @@
       channel
         .on("postgres_changes", { event: "UPDATE", schema: "public", table: "updown_rounds", filter: "id=eq." + roundId }, function (payload) {
           if (payload.new && payload.new.status === "finished") {
-            state.roundCreatedAt = payload.new.created_at || null;
             state.roundCorrectList = null;
-            var correctPromise = sb.from("updown_round_correct")
-              .select("client_id, correct_at")
-              .eq("round_id", roundId)
-              .order("correct_at", { ascending: true })
-              .then(function (res) { return (res.data || []).slice(); });
-            var roundPromise = sb.from("updown_rounds")
-              .select("created_at")
-              .eq("id", roundId)
-              .maybeSingle()
-              .then(function (res) {
-                if (res.error) return null;
-                return res.data && res.data.created_at ? res.data.created_at : null;
-              });
-            Promise.allSettled([correctPromise, roundPromise]).then(function (results) {
-              state.roundCorrectList = results[0].status === "fulfilled" ? results[0].value : [];
-              if (results[1].status === "fulfilled" && results[1].value != null) state.roundCreatedAt = results[1].value;
+            state.roundCreatedAt = payload.new.created_at || null;
+            function goShowResult() {
               refreshLobbyWins(function () {
                 showRoundResult();
               });
-            });
+            }
+            sb.rpc("get_updown_round_result", { p_round_id: roundId }).maybeSingle()
+              .then(function (res) {
+                var row = (Array.isArray(res.data) && res.data.length) ? res.data[0] : res.data;
+                if (!res.error && row && Array.isArray(row.correct_list) && row.correct_list.length) {
+                  state.roundCorrectList = row.correct_list;
+                  if (row.created_at != null) state.roundCreatedAt = row.created_at;
+                  goShowResult();
+                  return;
+                }
+                sb.from("updown_round_correct").select("client_id, correct_at").eq("round_id", roundId).order("correct_at", { ascending: true })
+                  .then(function (cRes) {
+                    if (cRes && !cRes.error && cRes.data) state.roundCorrectList = cRes.data;
+                    goShowResult();
+                  })
+                  .catch(function () { goShowResult(); });
+              })
+              .catch(function () {
+                sb.from("updown_round_correct").select("client_id, correct_at").eq("round_id", roundId).order("correct_at", { ascending: true })
+                  .then(function (cRes) {
+                    if (cRes && !cRes.error && cRes.data) state.roundCorrectList = cRes.data;
+                    goShowResult();
+                  })
+                  .catch(goShowResult);
+              });
           }
         })
         .subscribe();
       state.unsubscribeRound = function () { sb.removeChannel(channel); };
+    }
+
+    /* 먼저 round 화면(범위·플레이어·입력·제출)을 보여준 뒤, 그 위에 4-3-2-1 카운트다운 */
+    function showRoundContent() {
+      var min = state.currentRound ? state.currentRound.min : 1;
+      var max = state.currentRound ? state.currentRound.max : 1;
+      document.getElementById("round-range-min").textContent = min;
+      document.getElementById("round-range-max").textContent = max;
+      document.getElementById("input-guess").min = min;
+      document.getElementById("input-guess").max = max;
+      document.getElementById("input-guess").value = "";
+      document.getElementById("round-feedback").classList.add("hidden");
+      renderRoundPlayerZones(state.roundPlayers || [], state.winCounts || {});
+    }
+
+    showRoundContent();
+
+    if (window.GameCountdown && slot) {
+      window.GameCountdown.run({
+        container: slot,
+        durationMs: 4000,
+        onComplete: function () { startRoundBgm(); }
+      });
+    } else {
+      startRoundBgm();
     }
   }
 
@@ -591,6 +625,21 @@
     });
   }
 
+  function applyDurationsToResultZones(resultOrder, roundCreatedAt) {
+    if (!roundCreatedAt) return;
+    var resultZones = document.getElementById("round-result-zones");
+    if (!resultZones) return;
+    var zones = resultZones.querySelectorAll(".round-player-zone[data-client-id]");
+    zones.forEach(function (zone) {
+      var cid = zone.dataset.clientId;
+      var p = resultOrder.find(function (x) { return x.client_id === cid; });
+      var durationEl = zone.querySelector(".round-zone-duration");
+      if (durationEl && p && p.correct_at) {
+        durationEl.textContent = "완료시각: " + ((new Date(p.correct_at).getTime() - new Date(roundCreatedAt).getTime()) / 1000).toFixed(1) + "초";
+      }
+    });
+  }
+
   function showRoundResult() {
     stopRoundBgm();
     var slot = document.getElementById("round-gameplay-slot");
@@ -618,7 +667,7 @@
             if (p.correct_at && state.roundCreatedAt) {
               sec = ((new Date(p.correct_at).getTime() - new Date(state.roundCreatedAt).getTime()) / 1000).toFixed(1) + "초";
             }
-            return [{ className: "round-zone-duration", textContent: sec }];
+            return [{ className: "round-zone-duration", textContent: "완료시각: " + sec }];
           }
         });
       } else {
@@ -651,7 +700,7 @@
           if (p.correct_at && state.roundCreatedAt) {
             sec = ((new Date(p.correct_at).getTime() - new Date(state.roundCreatedAt).getTime()) / 1000).toFixed(1) + "초";
           }
-          durationEl.textContent = sec;
+          durationEl.textContent = "완료시각: " + sec;
           zone.appendChild(durationEl);
           slotEl.appendChild(zone);
           resultZones.appendChild(slotEl);
@@ -662,6 +711,18 @@
           getWinCount: function (cid) { return (state.winCounts || {})[cid] || 0; },
           winsFormat: "paren"
         });
+      }
+      if (resultOrder.some(function (p) { return p.correct_at; }) && !state.roundCreatedAt && state.currentRound && state.currentRound.id) {
+        var sb = getSupabase();
+        if (sb) {
+          sb.from("updown_rounds").select("created_at").eq("id", state.currentRound.id).maybeSingle()
+            .then(function (res) {
+              if (!res.error && res.data && res.data.created_at) {
+                state.roundCreatedAt = res.data.created_at;
+                applyDurationsToResultZones(resultOrder, state.roundCreatedAt);
+              }
+            });
+        }
       }
     }
     document.querySelectorAll(".host-only").forEach(function (el) {
@@ -683,7 +744,7 @@
     var feedback = document.getElementById("round-feedback");
     var guess = parseInt(input.value, 10);
     var min = state.currentRound ? state.currentRound.min : 1;
-    var max = state.currentRound ? state.currentRound.max : 50;
+    var max = state.currentRound ? state.currentRound.max : 1;
     if (isNaN(guess) || guess < min || guess > max) {
       feedback.textContent = min + " ~ " + max + " 사이 숫자를 입력하세요.";
       feedback.classList.remove("hidden", "up", "down", "correct");

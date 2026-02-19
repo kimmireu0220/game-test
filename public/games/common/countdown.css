@@ -1,0 +1,24 @@
+/**
+ * 공통 3-2-1 카운트다운 오버레이 (타이밍 게임, 업다운 게임 등)
+ */
+.game-page-wrapper .round-countdown-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+.game-page-wrapper .round-countdown-overlay.hidden { display: none; }
+.game-page-wrapper .round-countdown-overlay .round-countdown-num {
+  font-size: clamp(4rem, 22vmin, 12rem);
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+  margin: 0;
+  line-height: 1;
+}

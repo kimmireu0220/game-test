@@ -1,25 +1,4 @@
-/* 타이머 게임 전용 (공통은 game-common.css) */
-.game-page-wrapper .round-countdown-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  pointer-events: none;
-}
-.game-page-wrapper .round-countdown-overlay.hidden { display: none; }
-.game-page-wrapper .round-countdown-overlay #round-countdown {
-  font-size: clamp(4rem, 22vmin, 12rem);
-  font-weight: bold;
-  color: #fff;
-  text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
-  margin: 0;
-  line-height: 1;
-}
+/* 타이머 게임 전용 (공통은 game-common.css, 카운트다운은 countdown.css) */
 .game-page-wrapper .round-live-timer {
   font-size: clamp(2.5rem, 12vmin, 4.5rem);
   font-weight: 700;

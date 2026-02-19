@@ -10,10 +10,6 @@
   var generateRoomCode = TimingGame.generateRoomCode;
   var cleanupSubscriptions = TimingGame.cleanupSubscriptions;
 
-  var BEEP_FREQ_COUNTDOWN = 880;
-  var BEEP_FREQ_GO = 1320;
-  var BEEP_DURATION_MS = 120;
-  var BEEP_DURATION_GO_MS = 180;
   var BGM_VOLUME = 0.3;
   var PRESS_POLL_MS = 500;
   var BGM_SOURCES = (typeof __BGM_SOURCES_ARRAY__ !== "undefined" ? __BGM_SOURCES_ARRAY__ : ["../common/sounds/bgm/game-bgm-1.mp3", "../common/sounds/bgm/game-bgm-2.mp3", "../common/sounds/bgm/game-bgm-3.mp3", "../common/sounds/bgm/game-bgm-4.mp3", "../common/sounds/bgm/game-bgm-5.mp3", "../common/sounds/bgm/game-bgm-6.mp3"]);
@@ -23,26 +19,6 @@
     var h = 0;
     for (var i = 0; i < str.length; i++) h = ((h << 5) - h) + str.charCodeAt(i) | 0;
     return Math.abs(h) % max;
-  }
-
-  function playCountdownBeep(frequency, durationMs) {
-    try {
-      if (!countdownAudioContext) {
-        countdownAudioContext = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      var ctx = countdownAudioContext;
-      if (ctx.state === "suspended") ctx.resume();
-      var osc = ctx.createOscillator();
-      var gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.value = frequency || BEEP_FREQ_COUNTDOWN;
-      gain.gain.setValueAtTime(0.15, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + (durationMs || BEEP_DURATION_MS) / 1000);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + (durationMs || BEEP_DURATION_MS) / 1000);
-    } catch (e) {}
   }
 
   function showScreen(id) {
@@ -175,7 +151,7 @@
     if (!sb) return;
 
     var code = generateRoomCode();
-    sb.from("rooms")
+    sb.from("timing_rooms")
       .insert({
         code: code,
         name: name,
@@ -191,7 +167,7 @@
         }
         var roomId = res.data.id;
         return sb
-          .from("room_players")
+          .from("timing_room_players")
           .insert({
             room_id: roomId,
             client_id: state.clientId,
@@ -227,7 +203,7 @@
     var sb = getSupabase();
     if (!sb) return;
 
-    sb.from("rooms")
+    sb.from("timing_rooms")
       .select("id, name, host_client_id, closed_at")
       .eq("code", code)
       .single()
@@ -242,7 +218,7 @@
           return;
         }
         return sb
-          .from("room_players")
+          .from("timing_room_players")
           .insert({
             room_id: room.id,
             client_id: state.clientId,
@@ -281,7 +257,7 @@
     cleanupSubscriptions();
     var titleEl = document.getElementById("lobby-room-name");
     titleEl.textContent = "[ " + (state.roomName || "대기실") + " ]";
-    sb.from("rooms").select("name").eq("id", state.roomId).single().then(function (res) {
+    sb.from("timing_rooms").select("name").eq("id", state.roomId).single().then(function (res) {
       if (res.data && res.data.name) {
         state.roomName = res.data.name;
         titleEl.textContent = "[ " + state.roomName + " ]";
@@ -313,11 +289,11 @@
     var btnStart = document.getElementById("btn-start-round");
     if (btnStart) btnStart.disabled = !state.isHost;
     channel
-      .on("postgres_changes", { event: "*", schema: "public", table: "room_players", filter: "room_id=eq." + state.roomId }, refreshLobbyPlayers)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "rounds", filter: "room_id=eq." + state.roomId }, function (payload) {
+      .on("postgres_changes", { event: "*", schema: "public", table: "timing_room_players", filter: "room_id=eq." + state.roomId }, refreshLobbyPlayers)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "timing_rounds", filter: "room_id=eq." + state.roomId }, function (payload) {
         if (payload.new && payload.new.id) onRoundStarted(payload.new);
       })
-      .on("postgres_changes", { event: "DELETE", schema: "public", table: "rooms", filter: "id=eq." + state.roomId }, function () {
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "timing_rooms", filter: "id=eq." + state.roomId }, function () {
         state.currentRound = null;
         state.roomId = null;
         state.isHost = false;
@@ -349,7 +325,7 @@
     var lobbyPollMs = 1500;
     state.lobbyRoundPollIntervalId = setInterval(function () {
       if (!state.roomId) return;
-      sb.from("rounds")
+      sb.from("timing_rounds")
         .select("id, start_at, target_seconds, created_at")
         .eq("room_id", state.roomId)
         .order("created_at", { ascending: false })
@@ -372,7 +348,7 @@
     var sb = getSupabase();
     if (!sb || !state.roomId) return;
 
-    sb.from("room_players")
+    sb.from("timing_room_players")
       .select("nickname, client_id")
       .eq("room_id", state.roomId)
       .order("joined_at")
@@ -410,7 +386,7 @@
     if (!state.roomId) return;
     var sb = getSupabase();
     if (!sb) return;
-    sb.from("rounds")
+    sb.from("timing_rounds")
       .select("id, start_at, target_seconds")
       .eq("room_id", state.roomId)
       .order("created_at")
@@ -421,7 +397,7 @@
         var roundIds = roundRes.data.map(function (r) {
           return r.id;
         });
-        sb.from("round_presses")
+        sb.from("timing_round_presses")
           .select("round_id, client_id, created_at")
           .in("round_id", roundIds)
           .then(function (pressRes) {
@@ -477,7 +453,7 @@
         state.pollRoundIntervalId = null;
         return;
       }
-      sb.from("rounds")
+      sb.from("timing_rounds")
 .select("id, start_at, target_seconds")
       .eq("room_id", state.roomId)
       .order("created_at", { ascending: false })
@@ -511,7 +487,27 @@
       .then(function (data) {
         if (data.error) {
           if (btnStart) btnStart.disabled = false;
-          alert(data.error);
+          var isRoomNotFound =
+            data.error.indexOf("Room not found") !== -1 || data.error.indexOf("Room lookup failed") !== -1;
+          if (isRoomNotFound) {
+            sb.from("timing_rooms").select("id").eq("id", state.roomId).single().then(function (res) {
+              if (res.error || !res.data) {
+                leaveRoom();
+                alert("방이 종료되었습니다.");
+              } else {
+                var url = (cfg && cfg.SUPABASE_URL) ? cfg.SUPABASE_URL : "";
+                alert(
+                  "방을 찾을 수 없거나 이미 종료되었습니다.\n\n" +
+                  "1) 앱에서 쓰는 SUPABASE_URL이 Edge Function이 배포된 프로젝트와 같은지 확인하세요.\n" +
+                  (url ? "현재 URL: " + url + "\n\n" : "") +
+                  "2) Supabase 대시보드에서 start-round 함수가 배포되어 있는지 확인하세요.\n" +
+                  "3) timing_rooms 테이블이 있는 프로젝트와 동일한 프로젝트에 배포되어 있어야 합니다."
+                );
+              }
+            });
+          } else {
+            alert(data.error);
+          }
           return;
         }
         startRoundPollingFallback();
@@ -525,12 +521,6 @@
   function ensureTimingRoundDOM() {
     var slot = document.getElementById("round-gameplay-slot");
     if (!slot || slot.children.length > 0) return;
-    var countdownOverlay = document.createElement("div");
-    countdownOverlay.id = "round-countdown-overlay";
-    countdownOverlay.className = "round-countdown-overlay hidden";
-    var countdownP = document.createElement("p");
-    countdownP.id = "round-countdown";
-    countdownOverlay.appendChild(countdownP);
     var gameplayWrap = document.createElement("div");
     gameplayWrap.id = "round-gameplay-wrap";
     var targetMsg = document.createElement("p");
@@ -548,7 +538,6 @@
     btnPress.id = "btn-press";
     btnPress.disabled = true;
     btnPress.textContent = "누르기";
-    slot.appendChild(countdownOverlay);
     slot.appendChild(gameplayWrap);
     slot.appendChild(liveZones);
     slot.appendChild(btnPress);
@@ -632,7 +621,7 @@
     var roundId = state.currentRound.id;
     var startAt = new Date(state.currentRound.start_at).getTime();
     var targetSec = state.currentRound.target_seconds || 0;
-    sb.from("round_presses")
+    sb.from("timing_round_presses")
       .select("client_id, created_at")
       .eq("round_id", roundId)
       .then(function (pressRes) {
@@ -709,12 +698,17 @@
       document.getElementById("btn-press").onclick = null;
       var sb = getSupabase();
       if (sb && state.currentRound) {
-        sb.from("round_presses").insert({
-          round_id: state.currentRound.id,
-          client_id: state.clientId
-        }).then(function () {
-          refreshRoundPressesDisplay();
-        });
+        sb.from("timing_round_presses")
+          .insert({
+            round_id: state.currentRound.id,
+            client_id: state.clientId
+          })
+          .select("created_at")
+          .single()
+          .then(function (res) {
+            if (res.data && res.data.created_at) state.myPressCreatedAt = res.data.created_at;
+            refreshRoundPressesDisplay();
+          });
       }
       if (state.waitAllPressesIntervalId != null) {
         clearInterval(state.waitAllPressesIntervalId);
@@ -723,8 +717,8 @@
       var roundId = state.currentRound.id;
       state.waitAllPressesIntervalId = setInterval(function () {
         if (!sb || !state.currentRound || state.currentRound.id !== roundId) return;
-        sb.from("round_presses").select("client_id").eq("round_id", roundId).then(function (pressRes) {
-          sb.from("room_players").select("client_id").eq("room_id", state.roomId).then(function (playerRes) {
+        sb.from("timing_round_presses").select("client_id").eq("round_id", roundId).then(function (pressRes) {
+          sb.from("timing_room_players").select("client_id").eq("room_id", state.roomId).then(function (playerRes) {
             var pressCount = (pressRes.data || []).length;
             var playerCount = (playerRes.data || []).length;
             if (playerCount > 0 && pressCount >= playerCount) {
@@ -741,61 +735,14 @@
   }
 
   function runCountdownToRoundStart(startAt, onComplete) {
-    var countdownEl = document.getElementById("round-countdown");
-    var countdownOverlayEl = document.getElementById("round-countdown-overlay");
-    countdownEl.textContent = "";
-    if (countdownOverlayEl) countdownOverlayEl.classList.add("hidden");
-    getServerTimeMs()
-      .then(function (t) {
-        var serverOffset = t.serverNowMs - t.clientNowMs;
-        var delay = Math.max(0, startAt - t.serverNowMs);
-        var countdownSteps = [
-          { ms: 3000, num: 4 },
-          { ms: 2000, num: 3 },
-          { ms: 1000, num: 2 },
-          { ms: 0, num: 1 }
-        ];
-        var countdownIntervalId = null;
-        var lastCountdownNum = null;
-        countdownIntervalId = setInterval(function () {
-          var remaining = startAt - (Date.now() + serverOffset);
-          var i;
-          for (i = 0; i < countdownSteps.length; i++) {
-            if (remaining > countdownSteps[i].ms) {
-              if (lastCountdownNum !== countdownSteps[i].num) {
-                lastCountdownNum = countdownSteps[i].num;
-                playCountdownBeep(BEEP_FREQ_COUNTDOWN, BEEP_DURATION_MS);
-              }
-              countdownEl.textContent = String(countdownSteps[i].num);
-              if (countdownOverlayEl) countdownOverlayEl.classList.remove("hidden");
-              return;
-            }
-          }
-          if (lastCountdownNum !== 0) {
-            lastCountdownNum = 0;
-            playCountdownBeep(BEEP_FREQ_GO, BEEP_DURATION_GO_MS);
-          }
-          if (countdownIntervalId != null) {
-            clearInterval(countdownIntervalId);
-            countdownIntervalId = null;
-          }
-          countdownEl.textContent = "";
-          if (countdownOverlayEl) countdownOverlayEl.classList.add("hidden");
-        }, 50);
-        setTimeout(function () {
-          if (countdownIntervalId != null) {
-            clearInterval(countdownIntervalId);
-            countdownIntervalId = null;
-          }
-          countdownEl.textContent = "";
-          if (countdownOverlayEl) countdownOverlayEl.classList.add("hidden");
-          onComplete();
-        }, delay);
-      })
-      .catch(function () {
-        var delay = Math.max(0, startAt - Date.now());
-        setTimeout(onComplete, delay);
-      });
+    var slot = document.getElementById("round-gameplay-slot");
+    if (!window.GameCountdown || !slot) return onComplete();
+    window.GameCountdown.run({
+      container: slot,
+      startAt: startAt,
+      getServerTime: getServerTimeMs,
+      onComplete: onComplete
+    });
   }
 
   function onRoundStarted(round) {
@@ -809,9 +756,9 @@
       state.lobbyRoundPollIntervalId = null;
     }
     state.currentRound = round;
+    state.myPressCreatedAt = null;
     ensureTimingRoundDOM();
     document.getElementById("round-target-msg").textContent = round.target_seconds + "초에 맞춰 누르세요.";
-    document.getElementById("round-countdown").textContent = "";
     document.getElementById("btn-press").disabled = true;
     var gameplayWrap = document.getElementById("round-gameplay-wrap");
     var btnPress = document.getElementById("btn-press");
@@ -827,7 +774,7 @@
 
     var sb = getSupabase();
     if (sb && state.roomId) {
-      sb.from("room_players")
+      sb.from("timing_room_players")
         .select("client_id, nickname")
         .eq("room_id", state.roomId)
         .order("joined_at")
@@ -858,11 +805,11 @@
     var targetMs = state.currentRound.target_seconds * 1000;
 
     function pollResult() {
-      sb.from("round_presses")
+      sb.from("timing_round_presses")
         .select("client_id, created_at")
         .eq("round_id", roundId)
         .then(function (pressRes) {
-          sb.from("room_players")
+          sb.from("timing_room_players")
             .select("client_id, nickname")
             .eq("room_id", state.roomId)
             .then(function (playerRes) {
@@ -878,6 +825,16 @@
                   list.push({ client_id: p.client_id, nickname: players[p.client_id] || p.client_id, offsetMs: offsetMs });
                 });
               }
+              if (state.myPressCreatedAt && players[state.clientId] !== undefined) {
+                var myCreated = new Date(state.myPressCreatedAt).getTime();
+                var myOffset = myCreated - startAt - targetMs;
+                var hasMe = list.some(function (x) { return x.client_id === state.clientId; });
+                if (!hasMe) list.push({ client_id: state.clientId, nickname: players[state.clientId] || state.clientId, offsetMs: myOffset });
+                else list.forEach(function (x) {
+                  if (x.client_id === state.clientId) x.offsetMs = myOffset;
+                });
+              }
+              state.myPressCreatedAt = null;
               var pressedIds = {};
               list.forEach(function (x) {
                 pressedIds[x.client_id] = true;
@@ -1044,9 +1001,9 @@
     if (!sb || !state.roomId) return;
 
     if (state.isHost) {
-      sb.from("rooms").delete().eq("id", state.roomId).eq("host_client_id", state.clientId).then(function () {});
+      sb.from("timing_rooms").delete().eq("id", state.roomId).eq("host_client_id", state.clientId).then(function () {});
     }
-    sb.from("room_players").delete().eq("room_id", state.roomId).eq("client_id", state.clientId).then(function () {});
+    sb.from("timing_room_players").delete().eq("room_id", state.roomId).eq("client_id", state.clientId).then(function () {});
     state.roomId = null;
     state.isHost = false;
     cleanupSubscriptions();

@@ -28,12 +28,22 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     const { data: room, error: roomError } = await supabase
-      .from("rooms")
+      .from("timing_rooms")
       .select("id, host_client_id, closed_at")
       .eq("id", room_id)
       .single();
 
-    if (roomError || !room || room.closed_at) {
+    if (roomError) {
+      const msg =
+        roomError.code === "PGRST116"
+          ? "Room not found or closed"
+          : "Room lookup failed: " + (roomError.message || roomError.code);
+      return new Response(JSON.stringify({ error: msg }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (!room || room.closed_at) {
       return new Response(
         JSON.stringify({ error: "Room not found or closed" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -51,7 +61,7 @@ Deno.serve(async (req) => {
     const startAt = new Date(Date.now() + 4000).toISOString();
 
     const { data: round, error: insertError } = await supabase
-      .from("rounds")
+      .from("timing_rounds")
       .insert({
         room_id,
         start_at: startAt,

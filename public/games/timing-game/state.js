@@ -8,7 +8,14 @@
   var STORAGE_NICKNAME = "mini_game_nickname";
 
   function getConfig() {
-    return (global.TIMING_GAME_CONFIG || global.window && global.window.TIMING_GAME_CONFIG) || {};
+    var cfg = (global.TIMING_GAME_CONFIG || (global.window && global.window.TIMING_GAME_CONFIG)) || {};
+    var url = cfg.SUPABASE_URL;
+    var key = cfg.SUPABASE_ANON_KEY;
+    if (!url || url.indexOf("__") !== -1 || !key || key.indexOf("__") !== -1) {
+      var fallback = (global.UPDOWN_GAME_CONFIG || (global.window && global.window.UPDOWN_GAME_CONFIG)) || {};
+      if (fallback.SUPABASE_URL && fallback.SUPABASE_ANON_KEY) cfg = fallback;
+    }
+    return cfg;
   }
 
   function getSupabase() {
@@ -73,7 +80,8 @@
     startButtonDelayFromPlayAgain: false,
     roundPlayers: null,
     lastRoundWinnerId: null,
-    roundResultOrder: null
+    roundResultOrder: null,
+    myPressCreatedAt: null
   };
 
   function cleanupSubscriptions() {
