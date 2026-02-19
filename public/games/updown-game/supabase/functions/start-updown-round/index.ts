@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const secretNumber = Math.floor(Math.random() * 100) + 1;
+    const secretNumber = 1; /* 임시: 1~1 범위 */
 
     const { data: round, error: insertRoundError } = await supabase
       .from("updown_rounds")
@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
       round_id: round.id,
       client_id: p.client_id,
       min: 1,
-      max: 100,
+      max: 1, /* 임시: 1~1 범위 */
     }));
 
     const { error: rangesError } = await supabase

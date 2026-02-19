@@ -23,9 +23,9 @@ Deno.serve(async (req) => {
     }
 
     const g = Number(guess);
-    if (!Number.isInteger(g) || g < 1 || g > 100) {
+    if (!Number.isInteger(g) || g < 1 || g > 1) {
       return new Response(
-        JSON.stringify({ error: "guess must be integer 1~100" }),
+        JSON.stringify({ error: "guess must be integer 1~1 (임시)" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
