@@ -194,10 +194,16 @@
           numSpan.textContent = "P" + (i + 1);
           li.appendChild(numSpan);
           li.appendChild(document.createTextNode(" " + p.nickname));
-          var winsSpan = document.createElement("span");
-          winsSpan.className = "lobby-player-wins";
-          winsSpan.textContent = " (" + (state.winCounts[p.client_id] || 0) + "승)";
-          li.appendChild(winsSpan);
+          if (p.client_id === hostClientId) {
+            var hostSpan = document.createElement("span");
+            hostSpan.className = "lobby-player-host";
+            var hostImg = document.createElement("img");
+            hostImg.src = "../images/host-icon.png";
+            hostImg.alt = "방장";
+            hostImg.className = "lobby-player-host-icon";
+            hostSpan.appendChild(hostImg);
+            li.appendChild(hostSpan);
+          }
           if (p.client_id === state.clientId) li.classList.add("me");
           ul.appendChild(li);
         });
@@ -296,7 +302,12 @@
       })
       .catch(function (e) {
         if (btnStart) btnStart.disabled = false;
-        alert("시작 실패: " + e.message);
+        var msg = e.message || "";
+        if (msg.indexOf("fetch") !== -1 || msg.indexOf("Failed") !== -1) {
+          alert("시작 실패: 서버에 연결할 수 없습니다. Supabase에 'start-updown-round' Edge Function이 배포되어 있는지 확인하세요. (README 참고)");
+        } else {
+          alert("시작 실패: " + msg);
+        }
       });
   }
 
