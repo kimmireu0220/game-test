@@ -5,7 +5,7 @@
   "use strict";
 
   var STORAGE_CLIENT_ID = "timing_game_client_id";
-  var STORAGE_NICKNAME = "timing_game_nickname";
+  var STORAGE_NICKNAME = "mini_game_nickname";
 
   function getConfig() {
     return (global.TIMING_GAME_CONFIG || global.window && global.window.TIMING_GAME_CONFIG) || {};
