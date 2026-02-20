@@ -10,43 +10,6 @@
   var generateRoomCode = UpdownGame.generateRoomCode;
   var cleanupSubscriptions = UpdownGame.cleanupSubscriptions;
 
-  var BGM_SOURCES = ["../common/sounds/bgm/game-bgm-1.mp3", "../common/sounds/bgm/game-bgm-2.mp3", "../common/sounds/bgm/game-bgm-3.mp3", "../common/sounds/bgm/game-bgm-4.mp3", "../common/sounds/bgm/game-bgm-5.mp3", "../common/sounds/bgm/game-bgm-6.mp3"];
-  var BGM_VOLUME = 0.3;
-
-  function hashStringToIndex(str, max) {
-    var h = 0;
-    for (var i = 0; i < str.length; i++) h = ((h << 5) - h) + str.charCodeAt(i) | 0;
-    return Math.abs(h) % max;
-  }
-
-  function startRoundBgm() {
-    if (state.roundBgmAudio) {
-      state.roundBgmAudio.pause();
-      state.roundBgmAudio = null;
-    }
-    if (!BGM_SOURCES.length) return;
-    try {
-      var bgmIdx = (state.currentRound && state.currentRound.id != null)
-        ? hashStringToIndex(String(state.currentRound.id), BGM_SOURCES.length)
-        : (state.bgmRoundIndex % BGM_SOURCES.length);
-      state.bgmRoundIndex += 1;
-      var src = BGM_SOURCES[bgmIdx];
-      if (src) {
-        state.roundBgmAudio = new Audio(src);
-        state.roundBgmAudio.loop = true;
-        state.roundBgmAudio.volume = BGM_VOLUME;
-        if (!state.bgmMuted) state.roundBgmAudio.play().catch(function () {});
-      }
-    } catch (e) {}
-  }
-
-  function stopRoundBgm() {
-    if (state.roundBgmAudio) {
-      state.roundBgmAudio.pause();
-      state.roundBgmAudio = null;
-    }
-  }
-
   function getServerTimeMs() {
     var cfg = getConfig();
     if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) return Promise.reject(new Error("config missing"));
@@ -162,45 +125,9 @@
     document.getElementById("btn-round-leave").onclick = leaveRoom;
     var btnRefresh = document.getElementById("btn-refresh");
     if (btnRefresh) btnRefresh.onclick = function () { location.reload(); };
-    var btnBgm = document.getElementById("btn-bgm-toggle");
-    if (btnBgm) {
-      btnBgm.onclick = function () {
-        state.bgmMuted = !state.bgmMuted;
-        updateBgmButton();
-        if (state.roundBgmAudio) {
-          if (state.bgmMuted) state.roundBgmAudio.pause();
-          else state.roundBgmAudio.play().catch(function () {});
-        }
-        try {
-          if (window.parent && window.parent !== window) {
-            window.parent.postMessage({ type: "setBgmMuted", value: state.bgmMuted }, "*");
-          }
-        } catch (err) {}
-      };
+    if (window.GameAudio && window.GameAudio.setupBgmButton) {
+      window.GameAudio.setupBgmButton(state, { audioKey: "roundBgmAudio" });
     }
-    function updateBgmButton() {
-      var btn = document.getElementById("btn-bgm-toggle");
-      if (!btn) return;
-      var img = btn.querySelector("img");
-      if (state.bgmMuted) {
-        btn.classList.add("muted");
-        if (img) img.src = "../../images/bgm-off.png";
-      } else {
-        btn.classList.remove("muted");
-        if (img) img.src = "../../images/bgm-on.png";
-      }
-    }
-    window.addEventListener("message", function (e) {
-      if (e.data && e.data.type === "setBgmMuted") {
-        state.bgmMuted = e.data.value;
-        updateBgmButton();
-        if (state.roundBgmAudio) {
-          if (state.bgmMuted) state.roundBgmAudio.pause();
-          else state.roundBgmAudio.play().catch(function () {});
-        }
-      }
-    });
-    updateBgmButton();
   }
 
   function createRoom() {
@@ -615,14 +542,14 @@
           state.countdownActive = false;
           if (inputGuess) inputGuess.disabled = false;
           if (btnSubmit) btnSubmit.disabled = false;
-          startRoundBgm();
+          if (window.GameAudio && window.GameAudio.startRoundBgm) window.GameAudio.startRoundBgm(state);
         }
       });
     } else {
       state.countdownActive = false;
       if (inputGuess) inputGuess.disabled = false;
       if (btnSubmit) btnSubmit.disabled = false;
-      startRoundBgm();
+      if (window.GameAudio && window.GameAudio.startRoundBgm) window.GameAudio.startRoundBgm(state);
     }
   }
 
@@ -690,7 +617,7 @@
   }
 
   function showRoundResult() {
-    stopRoundBgm();
+    if (window.GameAudio && window.GameAudio.stopRoundBgm) window.GameAudio.stopRoundBgm(state);
     var slot = document.getElementById("round-gameplay-slot");
     var resultSection = document.getElementById("round-result-section");
     if (slot) slot.classList.add("hidden");
@@ -799,11 +726,8 @@
     document.querySelectorAll(".host-only").forEach(function (el) {
       el.classList.toggle("hidden", !state.isHost);
     });
-    if (resultOrder.length > 0 && resultOrder[0].client_id === state.clientId) {
-      try {
-        var winAudio = new Audio("../common/sounds/win.mp3");
-        winAudio.play();
-      } catch (e) {}
+    if (resultOrder.length > 0 && resultOrder[0].client_id === state.clientId && window.GameAudio && window.GameAudio.playWinSound) {
+      window.GameAudio.playWinSound();
     }
     if (state.unsubscribeRound) state.unsubscribeRound();
   }

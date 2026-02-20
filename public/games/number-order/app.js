@@ -13,43 +13,6 @@
   var ROUND_RESULT_TIMEOUT_MS = 35000;
   var GRID_TIMEOUT_MS = 30000;
 
-  var BGM_SOURCES = ["../common/sounds/bgm/game-bgm-1.mp3", "../common/sounds/bgm/game-bgm-2.mp3", "../common/sounds/bgm/game-bgm-3.mp3", "../common/sounds/bgm/game-bgm-4.mp3", "../common/sounds/bgm/game-bgm-5.mp3", "../common/sounds/bgm/game-bgm-6.mp3"];
-  var BGM_VOLUME = 0.3;
-
-  function hashStringToIndex(str, max) {
-    var h = 0;
-    for (var i = 0; i < str.length; i++) h = ((h << 5) - h) + str.charCodeAt(i) | 0;
-    return Math.abs(h) % max;
-  }
-
-  function startRoundBgm() {
-    if (state.roundBgmAudio) {
-      state.roundBgmAudio.pause();
-      state.roundBgmAudio = null;
-    }
-    if (!BGM_SOURCES.length) return;
-    try {
-      var bgmIdx = (state.currentRound && state.currentRound.id != null)
-        ? hashStringToIndex(String(state.currentRound.id), BGM_SOURCES.length)
-        : (state.bgmRoundIndex % BGM_SOURCES.length);
-      state.bgmRoundIndex += 1;
-      var src = BGM_SOURCES[bgmIdx];
-      if (src) {
-        state.roundBgmAudio = new Audio(src);
-        state.roundBgmAudio.loop = true;
-        state.roundBgmAudio.volume = BGM_VOLUME;
-        if (!state.bgmMuted) state.roundBgmAudio.play().catch(function () {});
-      }
-    } catch (e) {}
-  }
-
-  function stopRoundBgm() {
-    if (state.roundBgmAudio) {
-      state.roundBgmAudio.pause();
-      state.roundBgmAudio = null;
-    }
-  }
-
   function getServerTimeMs() {
     var cfg = getConfig();
     if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) return Promise.reject(new Error("config missing"));
@@ -109,45 +72,9 @@
     document.getElementById("btn-leave-room").onclick = leaveRoom;
     document.getElementById("btn-round-play-again").onclick = playAgain;
     document.getElementById("btn-round-leave").onclick = leaveRoom;
-    var btnBgm = document.getElementById("btn-bgm-toggle");
-    if (btnBgm) {
-      btnBgm.onclick = function () {
-        state.bgmMuted = !state.bgmMuted;
-        updateBgmButton();
-        if (state.roundBgmAudio) {
-          if (state.bgmMuted) state.roundBgmAudio.pause();
-          else state.roundBgmAudio.play().catch(function () {});
-        }
-        try {
-          if (window.parent && window.parent !== window) {
-            window.parent.postMessage({ type: "setBgmMuted", value: state.bgmMuted }, "*");
-          }
-        } catch (err) {}
-      };
+    if (window.GameAudio && window.GameAudio.setupBgmButton) {
+      window.GameAudio.setupBgmButton(state, { audioKey: "roundBgmAudio" });
     }
-    function updateBgmButton() {
-      var btn = document.getElementById("btn-bgm-toggle");
-      if (!btn) return;
-      var img = btn.querySelector("img");
-      if (state.bgmMuted) {
-        btn.classList.add("muted");
-        if (img) img.src = "../../images/bgm-off.png";
-      } else {
-        btn.classList.remove("muted");
-        if (img) img.src = "../../images/bgm-on.png";
-      }
-    }
-    window.addEventListener("message", function (e) {
-      if (e.data && e.data.type === "setBgmMuted") {
-        state.bgmMuted = e.data.value;
-        updateBgmButton();
-        if (state.roundBgmAudio) {
-          if (state.bgmMuted) state.roundBgmAudio.pause();
-          else state.roundBgmAudio.play().catch(function () {});
-        }
-      }
-    });
-    updateBgmButton();
   }
 
   function createRoom() {
@@ -406,7 +333,7 @@
               btn.disabled = false;
             });
           }
-          startRoundBgm();
+          if (window.GameAudio && window.GameAudio.startRoundBgm) window.GameAudio.startRoundBgm(state);
           startElapsedTimer();
           startGridTimeout();
           startResultPolling();
@@ -482,7 +409,10 @@
     }
     if (n === 16) {
       state.tap16Time = Date.now();
-      state.durationMs = state.tap1Time != null ? state.tap16Time - state.tap1Time : 0;
+      // 전체 시간(Go! 시점 ~ 16번 터치)으로 통일
+      state.durationMs = elapsedStartReal != null
+        ? state.tap16Time - elapsedStartReal
+        : (state.tap1Time != null ? state.tap16Time - state.tap1Time : 0);
       var sb = getSupabase();
       if (sb) {
         sb.from("no_round_results")
@@ -568,12 +498,9 @@
               return a.duration_ms - b.duration_ms;
             });
             state.roundResultOrder = list;
-            stopRoundBgm();
-            if (list.length > 0 && list[0].client_id === state.clientId) {
-              try {
-                var winAudio = new Audio("../common/sounds/win.mp3");
-                winAudio.play();
-              } catch (e) {}
+            if (window.GameAudio && window.GameAudio.stopRoundBgm) window.GameAudio.stopRoundBgm(state);
+            if (list.length > 0 && list[0].client_id === state.clientId && window.GameAudio && window.GameAudio.playWinSound) {
+              window.GameAudio.playWinSound();
             }
             renderResultSection();
             var resultSection = document.getElementById("round-result-section");
@@ -616,7 +543,7 @@
       clearInterval(state.resultPollIntervalId);
       state.resultPollIntervalId = null;
     }
-    stopRoundBgm();
+    if (window.GameAudio && window.GameAudio.stopRoundBgm) window.GameAudio.stopRoundBgm(state);
     stopElapsedTimer();
     var resultSection = document.getElementById("round-result-section");
     var slot = document.getElementById("round-gameplay-slot");
@@ -645,7 +572,7 @@
     state.durationMs = null;
     state.roundResultOrder = [];
     cleanupSubscriptions();
-    stopRoundBgm();
+    if (window.GameAudio && window.GameAudio.stopRoundBgm) window.GameAudio.stopRoundBgm(state);
     stopElapsedTimer();
     showScreen("screen-nickname");
     if (sb && roomId) {
