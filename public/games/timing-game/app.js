@@ -25,7 +25,7 @@
     var sb = getSupabase();
     if (!sb) {
       document.querySelector("#screen-nickname .button-row").innerHTML =
-        "<p>Supabase URL과 anon key를 config.example.js에 설정하세요.</p>";
+        "<p>Supabase URL과 anon key를 .env에 설정하세요. (SUPABASE_URL, SUPABASE_ANON_KEY)</p>";
       return;
     }
 
@@ -379,30 +379,6 @@
       });
   }
 
-  function getServerTimeMs() {
-    var cfg = getConfig();
-    if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) return Promise.reject(new Error("config missing"));
-    var clientNow = Date.now();
-    return fetch(cfg.SUPABASE_URL + "/functions/v1/get-server-time", {
-      method: "GET",
-      headers: { Authorization: "Bearer " + cfg.SUPABASE_ANON_KEY }
-    })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (data.error) return Promise.reject(new Error(data.error));
-        var serverNowMs = new Date(data.now).getTime();
-        return { serverNowMs: serverNowMs, clientNowMs: clientNow };
-      });
-  }
-
-  function formatTimeSec(totalSeconds) {
-    if (totalSeconds == null || isNaN(totalSeconds) || totalSeconds < 0) return "00.00";
-    var intPart = Math.floor(totalSeconds);
-    var decPart = Math.round((totalSeconds - intPart) * 100);
-    if (decPart >= 100) decPart = 99;
-    return (intPart + "").padStart(2, "0") + "." + (decPart + "").padStart(2, "0");
-  }
-
   var ROUND_POLL_INTERVAL_MS = 400;
   var ROUND_POLL_TIMEOUT_MS = 12000;
 
@@ -570,7 +546,7 @@
     var timeEl = zone.querySelector(".round-zone-time");
     var errorEl = zone.querySelector(".round-zone-error");
     if (timeEl && errorEl) {
-      timeEl.textContent = formatTimeSec(pressTimeSec != null ? pressTimeSec : 0);
+      timeEl.textContent = window.GameFormatTime && window.GameFormatTime.formatDurationSeconds ? window.GameFormatTime.formatDurationSeconds(pressTimeSec != null ? pressTimeSec : 0) : (pressTimeSec != null ? pressTimeSec : 0).toFixed(2);
       var sign = (offsetSec || 0) >= 0 ? "+" : "";
       errorEl.textContent = "오차: " + sign + (offsetSec || 0).toFixed(2);
       timeEl.style.display = "";
@@ -621,10 +597,10 @@
           document.getElementById("btn-press").disabled = false;
           return;
         }
-        if (liveTimerEl) liveTimerEl.textContent = formatTimeSec(elapsed);
+        if (liveTimerEl) liveTimerEl.textContent = window.GameFormatTime && window.GameFormatTime.formatDurationSeconds ? window.GameFormatTime.formatDurationSeconds(elapsed) : elapsed.toFixed(2);
       }, 50);
     }
-    getServerTimeMs()
+    (window.GameGetServerTime && window.GameGetServerTime.getServerTimeMs ? window.GameGetServerTime.getServerTimeMs(getConfig) : Promise.reject(new Error("GameGetServerTime not loaded")))
       .then(function (r) {
         runPhase(r.serverNowMs, r.serverNowMs - r.clientNowMs);
       })
@@ -700,7 +676,7 @@
       container: slot,
       countFrom: 4,
       startAt: startAt,
-      getServerTime: getServerTimeMs,
+      getServerTime: window.GameGetServerTime && window.GameGetServerTime.getServerTimeMs ? function () { return window.GameGetServerTime.getServerTimeMs(getConfig); } : undefined,
       onComplete: onComplete
     });
   }
@@ -863,7 +839,7 @@
         var errorText = "—";
         if (p.offsetMs != null) {
           var pressTimeSec = targetSec + p.offsetMs / 1000;
-          timeText = formatTimeSec(pressTimeSec || 0);
+          timeText = window.GameFormatTime && window.GameFormatTime.formatDurationSeconds ? window.GameFormatTime.formatDurationSeconds(pressTimeSec || 0) : (pressTimeSec || 0).toFixed(2);
           var sign = (p.offsetMs || 0) >= 0 ? "+" : "";
           errorText = "오차: " + sign + (p.offsetMs / 1000).toFixed(2);
         }
@@ -911,7 +887,7 @@
         errorEl.className = "round-zone-error";
         if (p.offsetMs != null) {
           var pressTimeSec = targetSec + p.offsetMs / 1000;
-          timeEl.textContent = formatTimeSec(pressTimeSec || 0);
+          timeEl.textContent = window.GameFormatTime && window.GameFormatTime.formatDurationSeconds ? window.GameFormatTime.formatDurationSeconds(pressTimeSec || 0) : (pressTimeSec || 0).toFixed(2);
           var sign = (p.offsetMs || 0) >= 0 ? "+" : "";
           errorEl.textContent = "오차: " + sign + (p.offsetMs / 1000).toFixed(2);
         } else {

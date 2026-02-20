@@ -1,5 +1,5 @@
-// Supabase Edge Function: get-server-time
-// 클라이언트가 서버 시각을 맞춰 카운트다운/시작 시점을 동기화할 때 사용.
+// Supabase Edge Function: get-server-time (공용)
+// 클라이언트가 서버 시각을 맞춰 카운트다운/시작 시점을 동기화할 때 사용. common에서 한 번만 배포하면 됨.
 
 declare const Deno: { serve: (handler: (req: Request) => Promise<Response>) => void };
 

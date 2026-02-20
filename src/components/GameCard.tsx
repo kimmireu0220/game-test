@@ -5,30 +5,8 @@ export interface GameEntry {
   file: string;
   title: string;
   slug: string;
-}
-
-function getCardIconUrl(slug: string): string | null {
-  const base = import.meta.env.BASE_URL;
-  if (slug === "timing-game") return `${base}games/timing-game/images/timing-game-icon.png`;
-  if (slug === "updown-game") return `${base}games/updown-game/images/updown-game-icon.png`;
-  if (slug === "number-order") return `${base}games/number-order/images/number-order-icon.jpg`;
-  if (slug === "random-game" || slug === "temp-game") return `${base}images/surprise-box.png`;
-  return null;
-}
-
-function getGameDescription(slug: string): string {
-  if (slug === "timing-game") {
-    return "목표 초에 가깝게 버튼 누르기\n오차 적은 사람 1등";
-  }
-  if (slug === "updown-game") {
-    return "업/다운 힌트로 비밀 숫자 맞추기\n빨리 정답 맞추면 1등";
-  }
-  if (slug === "random-game") {
-    return "게임 중 하나를 랜덤 선택\n선택된 게임으로 바로 플레이";
-  }
-  if (slug === "temp-game") return "임시 게임\n(추가 예정)";
-  if (slug === "number-order") return "1부터 16까지 순서대로 빠르게 터치\n소요 시간 짧은 사람이 1등";
-  return "";
+  icon?: string;
+  description?: string;
 }
 
 const CARD_SIZE = 160;
@@ -77,10 +55,13 @@ interface GameCardProps {
   as?: "li" | "div";
 }
 
+const DEFAULT_ICON = "images/surprise-box.png";
+
 export function GameCard({ game, as: Wrapper = "li" }: GameCardProps) {
   const [showInfo, setShowInfo] = useState(false);
-  const iconUrl = getCardIconUrl(game.slug);
-  const description = getGameDescription(game.slug);
+  const base = import.meta.env.BASE_URL;
+  const iconUrl = game.icon ? `${base}${game.icon}` : `${base}${DEFAULT_ICON}`;
+  const description = game.description ?? "설명이 없습니다.";
 
   return (
     <Wrapper style={{ position: "relative" } as React.CSSProperties}>
@@ -112,13 +93,11 @@ export function GameCard({ game, as: Wrapper = "li" }: GameCardProps) {
           e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)";
         }}
       >
-        {iconUrl && (
-          <img
-            src={iconUrl}
-            alt=""
-            style={{ width: 44, height: 44, objectFit: "contain", flexShrink: 0 }}
-          />
-        )}
+        <img
+          src={iconUrl}
+          alt=""
+          style={{ width: 44, height: 44, objectFit: "contain", flexShrink: 0 }}
+        />
         <span style={{ textAlign: "center", lineHeight: 1.3 }}>{game.title}</span>
       </Link>
       {showInfo && (
@@ -210,7 +189,7 @@ export function GameCard({ game, as: Wrapper = "li" }: GameCardProps) {
                 letterSpacing: "0.01em",
               }}
             >
-              {description || "설명이 없습니다."}
+              {description}
             </p>
           </div>
         </>

@@ -13,22 +13,6 @@
   var ROUND_RESULT_TIMEOUT_MS = 35000;
   var GRID_TIMEOUT_MS = 30000;
 
-  function getServerTimeMs() {
-    var cfg = getConfig();
-    if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) return Promise.reject(new Error("config missing"));
-    var clientNow = Date.now();
-    return fetch(cfg.SUPABASE_URL + "/functions/v1/get-server-time", {
-      method: "GET",
-      headers: { Authorization: "Bearer " + cfg.SUPABASE_ANON_KEY }
-    })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (data.error) return Promise.reject(new Error(data.error));
-        var serverNowMs = new Date(data.now).getTime();
-        return { serverNowMs: serverNowMs, clientNowMs: clientNow };
-      });
-  }
-
   function showScreen(id) {
     document.querySelectorAll(".game-page-wrapper .screen").forEach(function (el) {
       el.classList.add("hidden");
@@ -41,7 +25,7 @@
     var sb = getSupabase();
     if (!sb) {
       var row = document.querySelector("#screen-nickname .button-row");
-      if (row) row.innerHTML = "<p>Supabase URL과 anon key를 config.example.js에 설정하세요.</p>";
+      if (row) row.innerHTML = "<p>Supabase URL과 anon key를 .env에 설정하세요. (SUPABASE_URL, SUPABASE_ANON_KEY)</p>";
       return;
     }
     state.nickname = getNickname();
@@ -343,7 +327,7 @@
         container: slot,
         countFrom: 4,
         startAt: startAtMs,
-        getServerTime: startAtMs ? getServerTimeMs : undefined,
+        getServerTime: startAtMs && window.GameGetServerTime && window.GameGetServerTime.getServerTimeMs ? function () { return window.GameGetServerTime.getServerTimeMs(getConfig); } : undefined,
         onComplete: function () {
           state.countdownActive = false;
           state.nextExpected = 1;
@@ -355,7 +339,7 @@
             });
           }
           if (window.GameAudio && window.GameAudio.startRoundBgm) window.GameAudio.startRoundBgm(state);
-          getServerTimeMs()
+          (window.GameGetServerTime && window.GameGetServerTime.getServerTimeMs ? window.GameGetServerTime.getServerTimeMs(getConfig) : Promise.reject(new Error("GameGetServerTime not loaded")))
             .then(function (r) {
               state.goTimeServerMs = r.serverNowMs;
               state.serverOffsetMs = r.serverNowMs - r.clientNowMs;
@@ -384,14 +368,6 @@
     }
   }
 
-  function formatDurationSeconds(totalSeconds) {
-    if (totalSeconds == null || isNaN(totalSeconds) || totalSeconds < 0) return "00.00";
-    var intPart = Math.floor(totalSeconds);
-    var decPart = Math.round((totalSeconds - intPart) * 100);
-    if (decPart >= 100) decPart = 99;
-    return (intPart + "").padStart(2, "0") + "." + (decPart + "").padStart(2, "0");
-  }
-
   function startElapsedTimer() {
     if (state.elapsedTimerIntervalId != null) clearInterval(state.elapsedTimerIntervalId);
     var elapsedEl = document.getElementById("number-order-elapsed");
@@ -401,7 +377,7 @@
       var estimatedServerMs = Date.now() + (state.serverOffsetMs || 0);
       var ms = Math.max(0, estimatedServerMs - state.goTimeServerMs);
       var totalSec = ms / 1000;
-      elapsedEl.textContent = formatDurationSeconds(totalSec);
+      elapsedEl.textContent = window.GameFormatTime && window.GameFormatTime.formatDurationSeconds ? window.GameFormatTime.formatDurationSeconds(totalSec) : totalSec.toFixed(2);
     }, 100);
   }
 
@@ -453,7 +429,7 @@
       updateGridPressedState();
       grid.querySelectorAll("button").forEach(function (btn) { btn.disabled = true; });
       var sb = getSupabase();
-      getServerTimeMs()
+      (window.GameGetServerTime && window.GameGetServerTime.getServerTimeMs ? window.GameGetServerTime.getServerTimeMs(getConfig) : Promise.reject(new Error("GameGetServerTime not loaded")))
         .then(function (r) {
           state.durationMs = Math.max(0, r.serverNowMs - (state.goTimeServerMs || r.serverNowMs));
           if (sb) {
@@ -464,7 +440,7 @@
           stopElapsedTimer();
           var completeMsg = document.getElementById("number-order-complete-msg");
           if (completeMsg) {
-            completeMsg.textContent = "완료! " + formatDurationSeconds(state.durationMs / 1000) + "초";
+            completeMsg.textContent = "완료! " + (window.GameFormatTime && window.GameFormatTime.formatDurationSeconds ? window.GameFormatTime.formatDurationSeconds(state.durationMs / 1000) : (state.durationMs / 1000).toFixed(2)) + "초";
             completeMsg.classList.remove("hidden");
           }
         })
@@ -479,7 +455,7 @@
           stopElapsedTimer();
           var completeMsg = document.getElementById("number-order-complete-msg");
           if (completeMsg) {
-            completeMsg.textContent = "완료! " + formatDurationSeconds(state.durationMs / 1000) + "초";
+            completeMsg.textContent = "완료! " + (window.GameFormatTime && window.GameFormatTime.formatDurationSeconds ? window.GameFormatTime.formatDurationSeconds(state.durationMs / 1000) : (state.durationMs / 1000).toFixed(2)) + "초";
             completeMsg.classList.remove("hidden");
           }
         });
@@ -589,7 +565,7 @@
     container.innerHTML = "";
     var list = state.roundResultOrder || [];
     list.forEach(function (item, i) {
-      var durationText = item.duration_ms != null ? formatDurationSeconds(item.duration_ms / 1000) : "—";
+      var durationText = item.duration_ms != null && window.GameFormatTime && window.GameFormatTime.formatDurationSeconds ? window.GameFormatTime.formatDurationSeconds(item.duration_ms / 1000) : (item.duration_ms != null ? (item.duration_ms / 1000).toFixed(2) : "—");
       var zone = window.GamePlayerZone.createPlayerZone({
         clientId: item.client_id,
         nickname: item.nickname,

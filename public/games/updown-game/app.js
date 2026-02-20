@@ -10,22 +10,6 @@
   var generateRoomCode = UpdownGame.generateRoomCode;
   var cleanupSubscriptions = UpdownGame.cleanupSubscriptions;
 
-  function getServerTimeMs() {
-    var cfg = getConfig();
-    if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) return Promise.reject(new Error("config missing"));
-    var clientNow = Date.now();
-    return fetch(cfg.SUPABASE_URL + "/functions/v1/get-server-time", {
-      method: "GET",
-      headers: { Authorization: "Bearer " + cfg.SUPABASE_ANON_KEY }
-    })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (data.error) return Promise.reject(new Error(data.error));
-        var serverNowMs = new Date(data.now).getTime();
-        return { serverNowMs: serverNowMs, clientNowMs: clientNow };
-      });
-  }
-
   function showScreen(id) {
     document.querySelectorAll(".game-page-wrapper .screen").forEach(function (el) {
       el.classList.add("hidden");
@@ -77,7 +61,7 @@
     var sb = getSupabase();
     if (!sb) {
       var row = document.querySelector("#screen-nickname .button-row");
-      if (row) row.innerHTML = "<p>Supabase URL과 anon key를 config.example.js에 설정하세요.</p>";
+      if (row) row.innerHTML = "<p>Supabase URL과 anon key를 .env에 설정하세요. (SUPABASE_URL, SUPABASE_ANON_KEY)</p>";
       return;
     }
     state.nickname = getNickname();
@@ -552,7 +536,7 @@
         container: slot,
         countFrom: 4,
         startAt: startAtMs,
-        getServerTime: startAtMs ? getServerTimeMs : undefined,
+        getServerTime: startAtMs && window.GameGetServerTime && window.GameGetServerTime.getServerTimeMs ? function () { return window.GameGetServerTime.getServerTimeMs(getConfig); } : undefined,
         onComplete: function () {
           state.countdownActive = false;
           if (inputGuess) inputGuess.disabled = false;
@@ -606,14 +590,6 @@
     return (state.currentRound && state.currentRound.created_at) || state.roundCreatedAt || null;
   }
 
-  function formatDurationSeconds(totalSeconds) {
-    if (totalSeconds == null || isNaN(totalSeconds)) return "—";
-    var intPart = Math.floor(totalSeconds);
-    var decPart = Math.round((totalSeconds - intPart) * 100);
-    if (decPart >= 100) decPart = 99;
-    return (intPart + "").padStart(2, "0") + "." + (decPart + "").padStart(2, "0");
-  }
-
   function applyDurationsToResultZones(resultOrder, roundStartTime) {
     if (!roundStartTime) return;
     var resultZones = document.getElementById("round-result-zones");
@@ -625,7 +601,7 @@
       var timeEl = zone.querySelector(".round-zone-time");
       if (timeEl && p && p.correct_at) {
         var totalSec = (new Date(p.correct_at).getTime() - new Date(roundStartTime).getTime()) / 1000;
-        timeEl.textContent = formatDurationSeconds(totalSec);
+        timeEl.textContent = window.GameFormatTime && window.GameFormatTime.formatDurationSeconds ? window.GameFormatTime.formatDurationSeconds(totalSec, "—") : (totalSec != null ? totalSec.toFixed(2) : "—");
       }
     });
   }
@@ -687,7 +663,7 @@
             var startTime = getRoundStartTime();
             if (p.correct_at && startTime) {
               var totalSec = (new Date(p.correct_at).getTime() - new Date(startTime).getTime()) / 1000;
-              timeText = formatDurationSeconds(totalSec);
+              timeText = window.GameFormatTime && window.GameFormatTime.formatDurationSeconds ? window.GameFormatTime.formatDurationSeconds(totalSec, "—") : (totalSec != null ? totalSec.toFixed(2) : "—");
             }
             return [{ className: "round-zone-time", textContent: timeText }];
           }
@@ -722,7 +698,7 @@
           var startTime = getRoundStartTime();
           if (p.correct_at && startTime) {
             var totalSec = (new Date(p.correct_at).getTime() - new Date(startTime).getTime()) / 1000;
-            timeText = formatDurationSeconds(totalSec);
+            timeText = window.GameFormatTime && window.GameFormatTime.formatDurationSeconds ? window.GameFormatTime.formatDurationSeconds(totalSec, "—") : (totalSec != null ? totalSec.toFixed(2) : "—");
           }
           timeEl.textContent = timeText;
           zone.appendChild(timeEl);
