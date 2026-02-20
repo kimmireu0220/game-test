@@ -252,15 +252,7 @@
       })
       .subscribe(function (status, err) {
         if (status === "SUBSCRIBED") {
-          if (state.startButtonDelayFromPlayAgain) {
-            btnStart.disabled = true;
-            setTimeout(function () {
-              state.startButtonDelayFromPlayAgain = false;
-              btnStart.disabled = !state.isHost;
-            }, 1000);
-          } else {
-            btnStart.disabled = !state.isHost;
-          }
+          btnStart.disabled = !state.isHost;
         } else if (status === "CHANNEL_ERROR") {
           btnStart.disabled = false;
         }
@@ -915,7 +907,6 @@
     buildTimingResultZones();
     if (againBtn) {
       againBtn.onclick = function () {
-        state.startButtonDelayFromPlayAgain = true;
         if (resultSection) resultSection.classList.add("hidden");
         if (slot) slot.classList.remove("hidden");
         showScreen("screen-lobby");

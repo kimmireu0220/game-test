@@ -70,7 +70,6 @@
     liveTimerInterval: null,
     timerBgmAudio: null,
     bgmPlayPending: false,
-    startButtonDelayFromPlayAgain: false,
     roundPlayers: null,
     lastRoundWinnerId: null,
     roundResultOrder: null,
