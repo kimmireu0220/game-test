@@ -585,7 +585,6 @@
   }
 
   function startRoundTimerPhase() {
-    var startReal = Date.now();
     var liveTimerEl = document.getElementById("round-live-timer");
     function hideLiveTimer() {
       if (state.liveTimerInterval != null) {
@@ -596,21 +595,31 @@
         window.GameAudio.stopRoundBgm(state, { audioKey: "timerBgmAudio" });
       }
     }
-    state.liveTimerInterval = setInterval(function () {
-      var elapsed = (Date.now() - startReal) / 1000;
-      if (elapsed >= 3) {
-        if (state.liveTimerInterval != null) {
-          clearInterval(state.liveTimerInterval);
-          state.liveTimerInterval = null;
+    function runPhase(phaseStartServerMs, serverOffsetMs) {
+      state.liveTimerInterval = setInterval(function () {
+        var estimatedServerMs = Date.now() + (serverOffsetMs || 0);
+        var elapsed = (estimatedServerMs - phaseStartServerMs) / 1000;
+        if (elapsed >= 3) {
+          if (state.liveTimerInterval != null) {
+            clearInterval(state.liveTimerInterval);
+            state.liveTimerInterval = null;
+          }
+          if (liveTimerEl) liveTimerEl.textContent = "??:??";
+          document.getElementById("btn-press").disabled = false;
+          return;
         }
-        if (liveTimerEl) liveTimerEl.textContent = "??:??";
-        document.getElementById("btn-press").disabled = false;
-        return;
-      }
-      var s = elapsed.toFixed(2);
-      var parts = s.split(".");
-      if (liveTimerEl) liveTimerEl.textContent = parts[0].padStart(2, "0") + ":" + (parts[1] || "00").slice(0, 2);
-    }, 50);
+        var s = elapsed.toFixed(2);
+        var parts = s.split(".");
+        if (liveTimerEl) liveTimerEl.textContent = parts[0].padStart(2, "0") + ":" + (parts[1] || "00").slice(0, 2);
+      }, 50);
+    }
+    getServerTimeMs()
+      .then(function (r) {
+        runPhase(r.serverNowMs, r.serverNowMs - r.clientNowMs);
+      })
+      .catch(function () {
+        runPhase(Date.now(), 0);
+      });
     if (window.GameAudio && window.GameAudio.startRoundBgm) {
       window.GameAudio.startRoundBgm(state, {
         audioKey: "timerBgmAudio",

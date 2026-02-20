@@ -65,6 +65,8 @@
     resultPollIntervalId: null,
     elapsedTimerIntervalId: null,
     countdownActive: false,
+    goTimeServerMs: null,
+    serverOffsetMs: null,
     bgmMuted: false,
     bgmRoundIndex: 0,
     roundBgmAudio: null

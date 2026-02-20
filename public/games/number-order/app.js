@@ -334,29 +334,43 @@
             });
           }
           if (window.GameAudio && window.GameAudio.startRoundBgm) window.GameAudio.startRoundBgm(state);
-          startElapsedTimer();
-          startGridTimeout();
-          startResultPolling();
+          getServerTimeMs()
+            .then(function (r) {
+              state.goTimeServerMs = r.serverNowMs;
+              state.serverOffsetMs = r.serverNowMs - r.clientNowMs;
+              startElapsedTimer();
+              startGridTimeout();
+              startResultPolling();
+            })
+            .catch(function () {
+              var startAt = state.currentRound && state.currentRound.start_at ? new Date(state.currentRound.start_at).getTime() : null;
+              state.goTimeServerMs = startAt != null ? startAt + 4000 : Date.now();
+              state.serverOffsetMs = 0;
+              startElapsedTimer();
+              startGridTimeout();
+              startResultPolling();
+            });
         }
       });
     } else {
       state.countdownActive = false;
       if (grid) grid.querySelectorAll("button").forEach(function (btn) { btn.disabled = false; });
+      var startAt = state.currentRound && state.currentRound.start_at ? new Date(state.currentRound.start_at).getTime() : null;
+      state.goTimeServerMs = startAt != null ? startAt + 4000 : Date.now();
+      state.serverOffsetMs = 0;
       startElapsedTimer();
       startResultPolling();
     }
   }
 
-  var elapsedStartReal = null;
-
   function startElapsedTimer() {
     if (state.elapsedTimerIntervalId != null) clearInterval(state.elapsedTimerIntervalId);
-    elapsedStartReal = Date.now();
     var elapsedEl = document.getElementById("number-order-elapsed");
     if (!elapsedEl) return;
     state.elapsedTimerIntervalId = setInterval(function () {
-      if (!elapsedStartReal) return;
-      var ms = Date.now() - elapsedStartReal;
+      if (state.goTimeServerMs == null) return;
+      var estimatedServerMs = Date.now() + (state.serverOffsetMs || 0);
+      var ms = Math.max(0, estimatedServerMs - state.goTimeServerMs);
       var totalSec = Math.floor(ms / 1000);
       var mm = Math.floor(totalSec / 60);
       var ss = totalSec % 60;
@@ -408,26 +422,40 @@
       state.tap1Time = Date.now();
     }
     if (n === 16) {
-      state.tap16Time = Date.now();
-      // 전체 시간(Go! 시점 ~ 16번 터치)으로 통일
-      state.durationMs = elapsedStartReal != null
-        ? state.tap16Time - elapsedStartReal
-        : (state.tap1Time != null ? state.tap16Time - state.tap1Time : 0);
-      var sb = getSupabase();
-      if (sb) {
-        sb.from("no_round_results")
-          .upsert({ round_id: state.currentRound.id, client_id: state.clientId, duration_ms: state.durationMs }, { onConflict: "round_id,client_id" })
-          .then(function () {});
-      }
       state.nextExpected = 17;
       updateGridPressedState();
       grid.querySelectorAll("button").forEach(function (btn) { btn.disabled = true; });
-      stopElapsedTimer();
-      var completeMsg = document.getElementById("number-order-complete-msg");
-      if (completeMsg) {
-        completeMsg.textContent = "완료! " + (state.durationMs / 1000).toFixed(2) + "초";
-        completeMsg.classList.remove("hidden");
-      }
+      var sb = getSupabase();
+      getServerTimeMs()
+        .then(function (r) {
+          state.durationMs = Math.max(0, r.serverNowMs - (state.goTimeServerMs || r.serverNowMs));
+          if (sb) {
+            sb.from("no_round_results")
+              .upsert({ round_id: state.currentRound.id, client_id: state.clientId, duration_ms: state.durationMs }, { onConflict: "round_id,client_id" })
+              .then(function () {});
+          }
+          stopElapsedTimer();
+          var completeMsg = document.getElementById("number-order-complete-msg");
+          if (completeMsg) {
+            completeMsg.textContent = "완료! " + (state.durationMs / 1000).toFixed(2) + "초";
+            completeMsg.classList.remove("hidden");
+          }
+        })
+        .catch(function () {
+          var estimated = state.goTimeServerMs != null ? (Date.now() + (state.serverOffsetMs || 0)) - state.goTimeServerMs : 0;
+          state.durationMs = Math.max(0, estimated);
+          if (sb) {
+            sb.from("no_round_results")
+              .upsert({ round_id: state.currentRound.id, client_id: state.clientId, duration_ms: state.durationMs }, { onConflict: "round_id,client_id" })
+              .then(function () {});
+          }
+          stopElapsedTimer();
+          var completeMsg = document.getElementById("number-order-complete-msg");
+          if (completeMsg) {
+            completeMsg.textContent = "완료! " + (state.durationMs / 1000).toFixed(2) + "초";
+            completeMsg.classList.remove("hidden");
+          }
+        });
       return;
     }
     state.nextExpected = n + 1;
@@ -538,6 +566,8 @@
     state.tap1Time = null;
     state.tap16Time = null;
     state.durationMs = null;
+    state.goTimeServerMs = null;
+    state.serverOffsetMs = null;
     state.roundResultOrder = [];
     if (state.resultPollIntervalId != null) {
       clearInterval(state.resultPollIntervalId);
@@ -570,6 +600,8 @@
     state.tap1Time = null;
     state.tap16Time = null;
     state.durationMs = null;
+    state.goTimeServerMs = null;
+    state.serverOffsetMs = null;
     state.roundResultOrder = [];
     cleanupSubscriptions();
     if (window.GameAudio && window.GameAudio.stopRoundBgm) window.GameAudio.stopRoundBgm(state);
