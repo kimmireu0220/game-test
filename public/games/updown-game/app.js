@@ -632,12 +632,9 @@
     });
   }
 
-  /** Go! 시각 (숫자 레이스와 동일: 카운트다운 4초 후 = start_at + 4초). 완료 시간 = correct_at - Go */
+  /** Go! 시각. Supabase에 start_at이 이미 입력 가능 시점(카운트다운 종료)으로 저장됨 → 그대로 사용 */
   function getRoundStartTime() {
-    var startAt = state.currentRound && state.currentRound.start_at;
-    if (!startAt) return null;
-    var goMs = new Date(startAt).getTime() + 4000;
-    return new Date(goMs).toISOString();
+    return (state.currentRound && state.currentRound.start_at) || null;
   }
 
   function applyDurationsToResultZones(resultOrder, roundStartTime) {
