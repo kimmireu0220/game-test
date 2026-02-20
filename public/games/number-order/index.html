@@ -2,13 +2,22 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>숫자 레이스</title>
-  <style>
-    body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #1a1a2e; color: #aaa; font-family: sans-serif; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>숫자 레이스 - 1~16 순서대로 터치</title>
+  <link rel="stylesheet" href="../common/game-common.css">
+  <link rel="stylesheet" href="../common/countdown.css">
+  <link rel="stylesheet" href="../common/rank-display.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <p>준비 중입니다.</p>
+  <div id="app"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../common/rank-display.js"></script>
+  <script src="../common/player-zone.js"></script>
+  <script src="../common/countdown.js"></script>
+  <script src="../common/game-shell.js"></script>
+  <script src="config.example.js"></script>
+  <script src="state.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

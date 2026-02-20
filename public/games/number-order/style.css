@@ -1,0 +1,73 @@
+/* 숫자 레이스 전용 (공통은 game-common.css, 카운트다운은 countdown.css) */
+
+.number-order-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  max-width: 320px;
+  margin: 0 auto 1rem;
+}
+
+.number-order-grid button {
+  min-height: 44px;
+  min-width: 44px;
+  font-size: clamp(1rem, 4vw, 1.5rem);
+  font-weight: 700;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.1);
+  color: #eee;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.number-order-grid button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.number-order-grid button:not(:disabled):active {
+  background: rgba(255,255,255,0.2);
+}
+
+/* 이미 누른 숫자 표시 */
+.number-order-grid button.number-order-pressed {
+  background: rgba(74, 222, 128, 0.25);
+  border-color: rgba(74, 222, 128, 0.5);
+  color: #86efac;
+}
+.number-order-grid button.number-order-pressed:disabled {
+  opacity: 0.9;
+}
+
+.number-order-elapsed {
+  font-size: clamp(1.5rem, 8vw, 2.5rem);
+  font-weight: 700;
+  color: #ff6b6b;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+#number-order-gameplay-wrap {
+  text-align: center;
+}
+
+.number-order-complete-msg {
+  color: #4ade80;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.game-page-wrapper #round-gameplay-slot .round-live-timer {
+  margin-bottom: 1rem;
+}
+
+/* 결과 화면: 타이밍/업다운과 동일 — 소요 시간(round-zone-time) 스타일 */
+.game-page-wrapper .round-player-zone .round-zone-time {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #ff6b6b;
+  font-variant-numeric: tabular-nums;
+  margin-top: 14px;
+}
