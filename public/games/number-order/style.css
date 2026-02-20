@@ -40,15 +40,6 @@
   opacity: 0.9;
 }
 
-.number-order-elapsed {
-  font-size: clamp(1.5rem, 8vw, 2.5rem);
-  font-weight: 700;
-  color: #ff6b6b;
-  font-variant-numeric: tabular-nums;
-  margin-bottom: 1rem;
-  text-align: center;
-}
-
 #number-order-gameplay-wrap {
   text-align: center;
 }

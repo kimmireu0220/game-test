@@ -587,7 +587,7 @@
   }
 
   function getRoundStartTime() {
-    return (state.currentRound && state.currentRound.created_at) || state.roundCreatedAt || null;
+    return (state.currentRound && state.currentRound.start_at) || (state.currentRound && state.currentRound.created_at) || state.roundCreatedAt || null;
   }
 
   function applyDurationsToResultZones(resultOrder, roundStartTime) {
@@ -632,6 +632,7 @@
               state.currentRound.created_at = row.created_at;
               state.roundCreatedAt = row.created_at;
             }
+            if (row.start_at != null) state.currentRound.start_at = row.start_at;
             if (Array.isArray(row.correct_list) && row.correct_list.length) {
               state.roundCorrectList = row.correct_list;
               var list = state.roundCorrectList;

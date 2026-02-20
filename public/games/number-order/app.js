@@ -277,11 +277,6 @@
     if (slot.children.length > 0) return slot;
     var wrap = document.createElement("div");
     wrap.id = "number-order-gameplay-wrap";
-    var elapsedEl = document.createElement("p");
-    elapsedEl.className = "number-order-elapsed";
-    elapsedEl.id = "number-order-elapsed";
-    elapsedEl.textContent = "00.00";
-    wrap.appendChild(elapsedEl);
     var completeMsg = document.createElement("p");
     completeMsg.className = "number-order-complete-msg hidden";
     completeMsg.id = "number-order-complete-msg";
@@ -310,14 +305,12 @@
     var slot = ensureRoundDOM();
     if (!slot) return;
     var grid = document.getElementById("number-order-grid");
-    var elapsedEl = document.getElementById("number-order-elapsed");
     var completeMsg = document.getElementById("number-order-complete-msg");
     if (grid) {
       grid.querySelectorAll("button").forEach(function (btn) {
         btn.disabled = true;
       });
     }
-    if (elapsedEl) elapsedEl.textContent = "00.00";
     if (completeMsg) { completeMsg.classList.add("hidden"); completeMsg.textContent = ""; }
 
     var startAtMs = state.currentRound && state.currentRound.start_at ? new Date(state.currentRound.start_at).getTime() : null;
@@ -369,16 +362,7 @@
   }
 
   function startElapsedTimer() {
-    if (state.elapsedTimerIntervalId != null) clearInterval(state.elapsedTimerIntervalId);
-    var elapsedEl = document.getElementById("number-order-elapsed");
-    if (!elapsedEl) return;
-    state.elapsedTimerIntervalId = setInterval(function () {
-      if (state.goTimeServerMs == null) return;
-      var estimatedServerMs = Date.now() + (state.serverOffsetMs || 0);
-      var ms = Math.max(0, estimatedServerMs - state.goTimeServerMs);
-      var totalSec = ms / 1000;
-      elapsedEl.textContent = window.GameFormatTime && window.GameFormatTime.formatDurationSeconds ? window.GameFormatTime.formatDurationSeconds(totalSec) : totalSec.toFixed(2);
-    }, 100);
+    /* 경과 시간 표시 없음(업다운과 동일). 제출 시간은 tap1Time/tap16Time으로 계산됨. */
   }
 
   function stopElapsedTimer() {
